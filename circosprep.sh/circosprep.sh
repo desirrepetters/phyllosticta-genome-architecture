@@ -90,64 +90,41 @@ Help()
 
 ################################################################################
 
-## Transforming long options in short ones
-
-for arg in "$@"; do
-	shift
-	case "$arg" in
-	"--strain") set -- "$@" "-s" ;;
-	"--tag") set -- "$@" "-t" ;;
-	"--species") set -- "$@" "-p" ;;
-	"--cutoff") set -- "$@" "-c" ;;
-	"--genes") set -- "$@" "-G" ;;
-	"--TEs") set -- "$@" "-T" ;;
-	"--spspecific") set -- "$@" "-S" ;;
-	"--stspecific") set -- "$@" "-I"
-	"--expression") set -- "$@" "-E" ;;
-	"--effectors") set -- "$@" "-F";;
-	"--cazymes") set -- "$@" "-C" ;;
-	"--proteases") set -- "$@" "-P" ;;
-	"--lipases") set -- "$@" "-L" ;;
-	"--BGCs") set -- "$@" -"B" ;;
-	esac
-done
-
-# Default behaviour
-
-GENES_OPTION=false
-TE_OPTION=false
-SPECIES_SPECIFIC_OPTION=false
-STRAIN_SPECIFIC_OPTION=false
-EXPRESSION_OPTION=false
-EFFECTORS_OPTION=false
-CAZYMES_OPTION=false
-PROTEASES_OPTION=false
-LIPASES_OPTION=false
-BGS_OPTION=false
-
-
-while getopts "s:t:p:c:G:T:S:E:F:C:P:L:B" flag;
+while getopts "s:t:p:c:1::2::3::4::5::6::7::8::9::" flag;
 do
     case "${flag}" in
         s) STRAIN=${OPTARG};;
         t) STRAIN_TAG=${OPTARG};;
         p) SPECIES=${OPTARG};;
 		c) SET_CUTOFF=${OPTARG};;
-		G) GENES_OPTION=true;;
-		T) TE_OPTION=true;;
-		S) SPECIES_SPECIFIC_OPTION=true;;
-		I) STRAIN_SPECIFIC_OPTION=true ;;
-		E) EXPRESSION_OPTION=true;;
-		F) EFFECTORS_OPTION=true;;
-		C) CAZYMES_OPTION=true;;
-		P) PROTEASES_OPTION=true;;
-		L) LIPASES_OPTION=true;;
-		B) BGCS_OPTION=true;;
+		1) SET_TRACK_01=${OPTARG};;
+		2) SET_TRACK_02=${OPTARG};;
+		3) SET_TRACK_03=${OPTARG};;
+		4) SET_TRACK_04=${OPTARG};;
+		5) SET_TRACK_05=${OPTARG};;
+		6) SET_TRACK_06=${OPTARG};;
+		7) SET_TRACK_07=${OPTARG};;
+		8) SET_TRACK_08=${OPTARG};;
+		9) SET_TRACK_09=${OPTARG};;
 		*) Help
 		
 		exit 1 ;;
     esac
 done
+shift $(expr $OPTIND - 1)
+
+# Adjusting arguments to work on sed
+
+CUTOFF=$SET_CUTOFF
+TRACK_01=$SET_TRACK_01
+TRACK_02=$SET_TRACK_02
+TRACK_03=$SET_TRACK_03
+TRACK_04=$SET_TRACK_04
+TRACK_05=$SET_TRACK_05
+TRACK_06=$SET_TRACK_06
+TRACK_07=$SET_TRACK_07
+TRACK_08=$SET_TRACK_08
+TRACK_09=$SET_TRACK_09
 
 # Genome, annotation and prediction foldes
 # Remember to adjust to corresponding paths in your system
@@ -176,6 +153,7 @@ BGC_ANNOTATION_SUPPORT_DIR="BGC Annotation (BED files)/Support files/"
 CAZYME_ANNOTATION_DIR="CAZymes Annotation (BED files)/"
 CAZYME_ANNOTATION_SUPPORT_DIR="CAZymes Annotation (BED files)/Support files/"
 CIRCOS_DIR="Circos plots/"
+CIRCOS_PRECONF_DIR="Circos plots/Pre-configuration files/"
 CIRCOS_SUPPORT_DIR="Circos plots/Configuration files/"
 CIRCOS_PLOT_DIR="Circos plots/Plots/"
 EFFECTOR_ANNOTATION_DIR="Effector Annotation (BED files)/"
@@ -191,11 +169,12 @@ GENOME_BED_DIR="Genomes (BED files)/"
 INTERSECT_BGC_DIR="Intersects of BGCs vs. 10kb sliding windows/"
 INTERSECT_CAZYME_DIR="Intersects of CAZymes vs. 10kb sliding windows/"
 INTERSECT_EFFECTOR_DIR="Intersects of effectors vs. 10kb sliding windows/"
+INTERSECT_EXPRESSION_DIR="Intersects of expression vs. 10kb sliding windows/" 
 INTERSECT_GENE_DIR="Intersects of genes vs. 10kb sliding windows/"
 INTERSECT_LIPASE_DIR="Intersects of lipases vs. 10kb sliding windows/"
 INTERSECT_PROTEASE_DIR="Intersects of proteases vs. 10kb sliding windows/"
-INTERSECT_SPECIES_SPECIFIC_DIR="Intersects of species specific genes vs. 10kb sliding windows/"
-INTERSECT_STRAIN_SPECIFIC_DIR="Intersects of strain specific genes vs. 10kb sliding windows/"
+INTERSECT_SPECIES_SPECIFIC_DIR="Intersects of species_specific vs. 10kb sliding windows/"
+INTERSECT_STRAIN_SPECIFIC_DIR="Intersects of strain_specific vs. 10kb sliding windows/"
 INTERSECT_TE_DIR="Intersects of TEs vs. 10kb sliding windows/"
 KARYOTYPE_DIR="Karyotypes files/"
 KARYOTYPE_SUPPORT_DIR="Karyotypes files/Support files/"
@@ -211,16 +190,13 @@ TELOMERE_DIR="Telomeres (BED files)/"
 TELOMERE_SUPPORT_DIR="Telomeres (BED files)/Support files/"
 TE_DIR="TEs Annotation (BED files)/"
 
+## Basic folders (required for most of the steps, even if you miss some specific annotation categories or will not include them in your plot)
+
 [ -d "${WORK_DIR}${SLIDING_WINDOW_DIR}" ] && echo "The folder ${SLIDING_WINDOW_DIR} already exists!" || mkdir "${WORK_DIR}${SLIDING_WINDOW_DIR}"
-[ -d "${WORK_DIR}${BGC_ANNOTATION_DIR}" ] && echo "The folder ${BGC_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${BGC_ANNOTATION_DIR}"
-[ -d "${WORK_DIR}${BGC_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${BGC_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${BGC_ANNOTATION_SUPPORT_DIR}"
-[ -d "${WORK_DIR}${CAZYME_ANNOTATION_DIR}" ] && echo "The folder ${CAZYME_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${CAZYME_ANNOTATION_DIR}"
-[ -d "${WORK_DIR}${CAZYME_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${CAZYME_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${CAZYME_ANNOTATION_SUPPORT_DIR}"
 [ -d "${WORK_DIR}${CIRCOS_DIR}" ] && echo "The folder ${CIRCOS_DIR} already exists!" || mkdir "${WORK_DIR}${CIRCOS_DIR}"
+[ -d "${WORK_DIR}${CIRCOS_PRECONF_DIR}" ] && echo "The folder ${CIRCOS_PRECONF_DIR} already exists!" || mkdir "${WORK_DIR}${CIRCOS_PRECONF_DIR}"
 [ -d "${WORK_DIR}${CIRCOS_SUPPORT_DIR}" ] && echo "The folder ${CIRCOS_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${CIRCOS_SUPPORT_DIR}"
 [ -d "${WORK_DIR}${CIRCOS_PLOT_DIR}" ] && echo "The folder ${CIRCOS_PLOT_DIR} already exists!" || mkdir "${WORK_DIR}${CIRCOS_PLOT_DIR}"
-[ -d "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}" ] && echo "The folder ${EFFECTOR_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}"
-[ -d "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${EFFECTOR_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}"
 [ -d "${WORK_DIR}${FILE_PREP_DIR}" ] && echo "The folder ${FILE_PREP_DIR} already exists!" || mkdir "${WORK_DIR}${FILE_PREP_DIR}"
 [ -d "${WORK_DIR}${FILE_PREP_BED_DIR}" ] && echo "The folder ${FILE_PREP_BED_DIR} already exists!" || mkdir "${WORK_DIR}${FILE_PREP_BED_DIR}"
 [ -d "${WORK_DIR}${FILE_PREP_KARYOTYPE_HEAD_DIR}" ] && echo "The folder ${FILE_PREP_KARYOTYPE_HEAD_DIR} already exists!" || mkdir "${WORK_DIR}${FILE_PREP_KARYOTYPE_HEAD_DIR}"
@@ -229,28 +205,11 @@ TE_DIR="TEs Annotation (BED files)/"
 [ -d "${WORK_DIR}${FILE_PREP_SCAFFOLD_TAG_DIR}" ] && echo "The folder ${FILE_PREP_SCAFFOLD_TAG_DIR} already exists!" || mkdir "${WORK_DIR}${FILE_PREP_SCAFFOLD_TAG_DIR}"
 [ -d "${WORK_DIR}${GENE_ANNOTATION_DIR}" ] && echo "The folder ${GENE_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${GENE_ANNOTATION_DIR}"
 [ -d "${WORK_DIR}${GENOME_BED_DIR}" ] && echo "The folder ${GENOME_BED_DIR} already exists!" || mkdir "${WORK_DIR}${GENOME_BED_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_BGC_DIR}" ] && echo "The folder ${INTERSECT_BGC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_BGC_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_CAZYME_DIR}" ] && echo "The folder ${INTERSECT_CAZYME_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_CAZYME_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}" ] && echo "The folder ${INTERSECT_EFFECTOR_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_GENE_DIR}" ] && echo "The folder ${INTERSECT_GENE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_GENE_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_LIPASE_DIR}" ] && echo "The folder ${INTERSECT_LIPASE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_LIPASE_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_PROTEASE_DIR}" ] && echo "The folder ${INTERSECT_PROTEASE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_PROTEASE_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}" ] && echo "The folder ${INTERSECT_SPECIES_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}" ] && echo "The folder ${INTERSECT_STRAIN_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}"
-[ -d "${WORK_DIR}${INTERSECT_TE_DIR}" ] && echo "The folder ${INTERSECT_TE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_TE_DIR}"
 [ -d "${WORK_DIR}${KARYOTYPE_DIR}" ] && echo "The folder ${KARYOTYPE_DIR} already exists!" || mkdir "${WORK_DIR}${KARYOTYPE_DIR}"
 [ -d "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}" ] && echo "The folder ${KARYOTYPE_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}"
-[ -d "${WORK_DIR}${LIPASE_ANNOTATION_DIR}" ] && echo "The folder ${LIPASE_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${LIPASE_ANNOTATION_DIR}"
-[ -d "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${LIPASE_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}"
-[ -d "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}" ] && echo "The folder ${PROTEASE_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}"
-[ -d "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${PROTEASE_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}"
-[ -d "${WORK_DIR}${SPECIES_SPECIFIC_DIR}" ] && echo "The folder ${SPECIES_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${SPECIES_SPECIFIC_DIR}"
-[ -d "${WORK_DIR}${SPECIES_SPECIFIC_SUPPORT_DIR}" ] && echo "The folder ${SPECIES_SPECIFIC_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${SPECIES_SPECIFIC_SUPPORT_DIR}"
-[ -d "${WORK_DIR}${STRAIN_SPECIFIC_DIR}" ] && echo "The folder ${STRAIN_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${STRAIN_SPECIFIC_DIR}"
-[ -d "${WORK_DIR}${STRAIN_SPECIFIC_SUPPORT_DIR}" ] && echo "The folder ${STRAIN_SPECIFIC_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${STRAIN_SPECIFIC_SUPPORT_DIR}"
+[ -d "${WORK_DIR}${INTERSECT_GENE_DIR}" ] && echo "The folder ${INTERSECT_GENE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_GENE_DIR}"
 [ -d "${WORK_DIR}${TELOMERE_DIR}" ] && echo "The folder ${TELOMERE_DIR} already exists!" || mkdir "${WORK_DIR}${TELOMERE_DIR}"
 [ -d "${WORK_DIR}${TELOMERE_SUPPORT_DIR}" ] && echo "The folder ${TELOMERE_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${TELOMERE_SUPPORT_DIR}"
-[ -d "${WORK_DIR}${TE_DIR}" ] && echo "The folder ${TE_DIR} already exists!" || mkdir "${WORK_DIR}${TE_DIR}"
 
 # Neccessary files
 
@@ -267,15 +226,14 @@ LIPASE="${LIPASE_PATH}${STRAIN}_lipases.tab"
 
 TEMPLATE_CONF="${TEMPLATE_PATH}Template.conf"
 TEMPLATE_TELOMERE_CONF="${TEMPLATE_PATH}Template_for_telomeres.conf"
+PRE_TEMPLATE_CONF="${CIRCOS_PRECONF_DIR}/${STRAIN}_template.conf"
+PRE_TEMPLATE_TELOMERE_CONF="${CIRCOS_PRECONF_DIR}/${STRAIN}_template_for_telomeres.conf"
 
 CIRCOS_PATH=/path/to/circos-0.69-9/bin/circos
 CIRCOS_CONF="${CIRCOS_SUPPORT_DIR}${STRAIN}.conf"
 CIRCOS_TELOMERE_CONF="${CIRCOS_SUPPORT_DIR}${STRAIN}_telomeres.conf"
-CIRCOS_OUTPUT_FILE="${STRAIN}"
-CIRCOS_OUTPUT_TELOMERE_FILE="${STRAIN}_telomeres"
-
-# Adjusting cutoff to work on sed
-CUTOFF=$SET_CUTOFF
+CIRCOS_OUTPUT_FILE="${STRAIN}_${TRACK_01}_${TRACK_02}_${TRACK_03}_${TRACK_04}_${TRACK_05}_${TRACK_06}_${TRACK_07}_${TRACK_08}_${TRACK_09}"
+CIRCOS_OUTPUT_TELOMERE_FILE="${STRAIN}_${TRACK_01}_${TRACK_02}_${TRACK_03}_${TRACK_04}_${TRACK_05}_${TRACK_06}_${TRACK_07}_${TRACK_08}_${TRACK_09}_telomeres"
 
 #############
 #Basic files#
@@ -371,23 +329,31 @@ sort -Vk1 -Vk3 "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}.bed" > "${WORK_DIR}${
 
 # Intersect gene annotation in BED format with the sliding windows and calculate gene density
 
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_windows_sorted.bed" -c -sorted > "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_gene_density.bed"
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_windows_sorted.bed" -c -sorted > "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_genes_density.bed"
 
 # Adding karyotype tag to the gene density files
 
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_gene_density.bed"
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_genes_density.bed"
 
 # Adjusting gene density file for Circos plot with telomeres
 
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_gene_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_gene_density_for_telomeres.bed"
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_genes_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_genes_density_for_telomeres.bed"
 
 
 #############
 # Effectors #
 #############
 
-if  [[ ${EFFECTORS_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "effectors" ]] || [[ ${TRACK_02} == "effectors" ]] || [[ ${TRACK_03} == "effectors" ]] || [[ ${TRACK_04} == "effectors" ]] || [[ ${TRACK_05} == "effectors" ]] || [[ ${TRACK_06} == "effectors" ]] || [[ ${TRACK_07} == "effectors" ]] || [[ ${TRACK_08} == "effectors" ]] || [[ ${TRACK_09} == "effectors" ]]
 then
+
+# Creating effector folders if necessary
+
+[ -d "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}" ] && echo "The folder ${EFFECTOR_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}"
+
+[ -d "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${EFFECTOR_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}" ] && echo "The folder ${INTERSECT_EFFECTOR_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}"
 
 sed '/#/d' "${EFFECTOR}" > "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header.tab"
 
@@ -397,13 +363,13 @@ join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10,2.2 -t "$(printf '\t'
 
 # Intersect effectors with sliding windows
 
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}${STRAIN}_effectors.bed" -c -sorted > "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effector_density.bed"
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}${STRAIN}_effectors.bed" -c -sorted > "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effectors_density.bed"
 
 # Adding karyotype tag to the effector density files
 
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effector_density.bed"
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effectors_density.bed"
 
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effector_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effector_density_for_telomeres.bed"
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effectors_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effectors_density_for_telomeres.bed"
 
 fi
 
@@ -411,45 +377,61 @@ fi
 # Proteases #
 #############
 
-if  [[ ${PROTEASES_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "proteases" ]] || [[ ${TRACK_02} == "proteases" ]] || [[ ${TRACK_03} == "proteases" ]] || [[ ${TRACK_04} == "proteases" ]] || [[ ${TRACK_05} == "proteases" ]] || [[ ${TRACK_06} == "proteases" ]] || [[ ${TRACK_07} == "proteases" ]] || [[ ${TRACK_08} == "proteases" ]] || [[ ${TRACK_09} == "proteases" ]]
 then
 
-sort -Vk1 "${PROTEASE}" > "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_proteases_sorted.tab"
+# Creating protease folders if necessary
 
-join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_sorted.bed" "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_proteases_sorted.tab" > "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}${STRAIN}_proteases.bed"
+[ -d "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}" ] && echo "The folder ${PROTEASE_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}"
+
+[ -d "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${PROTEASE_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_PROTEASE_DIR}" ] && echo "The folder ${INTERSECT_PROTEASE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_PROTEASE_DIR}"
+
+sort -k1 "${PROTEASE}" > "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_proteases_sorted.tab"
+
+join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_regular_sorted.bed" "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_proteases_sorted.tab" | sort -Vk1 > "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}${STRAIN}_proteases.bed"
 
 # Intersect proteases with sliding windows
 
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}${STRAIN}_proteases.bed" -c -sorted > "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density.bed"
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}${STRAIN}_proteases.bed" -c -sorted > "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_proteases_density.bed"
 
 # Adding karyotype tag to the protease density files
 
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density.bed"
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_proteases_density.bed"
 
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density_for_telomeres.bed"
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_proteases_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_proteases_density_for_telomeres.bed"
 
 fi
 
 #############
-# Lipases #
+#  Lipases  #
 #############
 
-if  [[ ${LIPASES_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "lipases" ]] || [[ ${TRACK_02} == "lipases" ]] || [[ ${TRACK_03} == "lipases" ]] || [[ ${TRACK_04} == "lipases" ]] || [[ ${TRACK_05} == "lipases" ]] || [[ ${TRACK_06} == "lipases" ]] || [[ ${TRACK_07} == "lipases" ]] || [[ ${TRACK_08} == "lipases" ]] || [[ ${TRACK_09} == "lipases" ]]
 then
 
-sort -Vk1 "${LIPASE}" > "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_lipases_sorted.tab"
+# Creating lipase folders if necessary
 
-join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_sorted.bed" "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_lipases_sorted.tab" > "${WORK_DIR}${LIPASE_ANNOTATION_DIR}${STRAIN}_lipases.bed"
+[ -d "${WORK_DIR}${LIPASE_ANNOTATION_DIR}" ] && echo "The folder ${LIPASE_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${LIPASE_ANNOTATION_DIR}"
+
+[ -d "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${LIPASE_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_LIPASE_DIR}" ] && echo "The folder ${INTERSECT_LIPASE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_LIPASE_DIR}"
+
+sort -k1 "${LIPASE}" > "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_lipases_sorted.tab"
+
+join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_regular_sorted.bed" "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_lipases_sorted.tab" | sort -Vk1 > "${WORK_DIR}${LIPASE_ANNOTATION_DIR}${STRAIN}_lipases.bed"
 
 # Intersect lipases with sliding windows
 
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${LIPASE_ANNOTATION_DIR}${STRAIN}_lipases.bed" -c -sorted > "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density.bed"
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${LIPASE_ANNOTATION_DIR}${STRAIN}_lipases.bed" -c -sorted > "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipases_density.bed"
 
 # Adding karyotype tag to the lipase density files
 
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density.bed"
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipases_density.bed"
 
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density_for_telomeres.bed"
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipases_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipases_density_for_telomeres.bed"
 
 fi
 
@@ -457,8 +439,14 @@ fi
 # Transposable elements #
 #########################
 
-if  [[ ${TE_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "TEs" ]] || [[ ${TRACK_02} == "TEs" ]] || [[ ${TRACK_03} == "TEs" ]] || [[ ${TRACK_04} == "TEs" ]] || [[ ${TRACK_05} == "TEs" ]] || [[ ${TRACK_06} == "TEs" ]] || [[ ${TRACK_07} == "TEs" ]] || [[ ${TRACK_08} == "TEs" ]] || [[ ${TRACK_09} == "TEs" ]]
 then
+
+# Creating TE folders if necessary
+
+[ -d "${WORK_DIR}${TE_DIR}" ] && echo "The folder ${TE_DIR} already exists!" || mkdir "${WORK_DIR}${TE_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_TE_DIR}" ] && echo "The folder ${INTERSECT_TE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_TE_DIR}"
 
 # Converting TE annotation from GFF3 to BED format
 
@@ -466,27 +454,19 @@ convert2bed --input=GFF < "${TES}" > "${WORK_DIR}${TE_DIR}${STRAIN}.bed"
 
 # Removing SSRs from the annotation file
 
-sed '/REPET_SSRs/d' "${WORK_DIR}${TE_DIR}${STRAIN}.bed" > "${WORK_DIR}${TE_DIR}${STRAIN}_no_SSR.bed"
-
-# Intersect TEs with sliding windows
-
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb_sorted.bed" -b "${WORK_DIR}${TE_DIR}${STRAIN}.bed" -c -sorted > "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density.bed"
+sed -i '/REPET_SSRs/d' "${WORK_DIR}${TE_DIR}${STRAIN}.bed"
 
 # Intersect TEs with sliding windows after removing SSRs
 
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb_sorted.bed" -b "${WORK_DIR}${TE_DIR}${STRAIN}_no_SSR.bed" -c -sorted > "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density_no_SSR.bed"
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb_sorted.bed" -b "${WORK_DIR}${TE_DIR}${STRAIN}.bed" -c -sorted > "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TEs_density.bed"
 
 # Adding karyotype tag to the TE density files
 
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density.bed"
-
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density_no_SSR.bed"
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TEs_density.bed"
 
 # Adjusting TE density file for Circos plot with telomeres
 
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density_for_telomeres.bed"
-
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density_no_SSR.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density_for_telomeres_no_SSR.bed"
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TEs_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TEs_density_for_telomeres.bed"
 
 fi
 
@@ -494,8 +474,16 @@ fi
 # Biosynthetic Gene Clusters (BGCs) #
 #####################################
 
-if  [[ ${BGCS_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "BGCs" ]] || [[ ${TRACK_02} == "BGCs" ]] || [[ ${TRACK_03} == "BGCs" ]] || [[ ${TRACK_04} == "BGCs" ]] || [[ ${TRACK_05} == "BGCs" ]] || [[ ${TRACK_06} == "BGCs" ]] || [[ ${TRACK_07} == "BGCs" ]] || [[ ${TRACK_08} == "BGCs" ]] || [[ ${TRACK_09} == "BGCs" ]]
 then
+
+# Creating BGC folders if necessary
+
+[ -d "${WORK_DIR}${BGC_ANNOTATION_DIR}" ] && echo "The folder ${BGC_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${BGC_ANNOTATION_DIR}"
+
+[ -d "${WORK_DIR}${BGC_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${BGC_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${BGC_ANNOTATION_SUPPORT_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_BGC_DIR}" ] && echo "The folder ${INTERSECT_BGC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_BGC_DIR}"
 
 # Creating BGCs file in BED format to intersect and calculate BGC density
  
@@ -505,15 +493,15 @@ join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" -
 
 # Intersect BGCs with sliding windows
 
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${BGC_ANNOTATION_DIR}${STRAIN}_BGCs.bed" -c -sorted > "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGC_density.bed"
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${BGC_ANNOTATION_DIR}${STRAIN}_BGCs.bed" -c -sorted > "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGCs_density.bed"
 
 # Adding karyotype tag to the BGCs density files
 
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGC_density.bed"
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGCs_density.bed"
 
 # Adjusting BGC density file for Circos plot with telomeres
 
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGC_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGC_density_for_telomeres.bed"
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGCs_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGCs_density_for_telomeres.bed"
 
 fi
 
@@ -521,8 +509,16 @@ fi
 # CAZymes #
 ###########
 
-if  [[ ${CAZYMES_OPTION_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "CAZymes" ]] || [[ ${TRACK_02} == "CAZymes" ]] || [[ ${TRACK_03} == "CAZymes" ]] || [[ ${TRACK_04} == "CAZymes" ]] || [[ ${TRACK_05} == "CAZymes" ]] || [[ ${TRACK_06} == "CAZymes" ]] || [[ ${TRACK_07} == "CAZymes" ]] || [[ ${TRACK_08} == "CAZymes" ]] || [[ ${TRACK_09} == "CAZymes" ]]
 then
+
+# Creating CAZymes folders if necessary
+
+[ -d "${WORK_DIR}${CAZYME_ANNOTATION_DIR}" ] && echo "The folder ${CAZYME_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${CAZYME_ANNOTATION_DIR}"
+
+[ -d "${WORK_DIR}${CAZYME_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${CAZYME_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${CAZYME_ANNOTATION_SUPPORT_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_CAZYME_DIR}" ] && echo "The folder ${INTERSECT_CAZYME_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_CAZYME_DIR}"
 
 # Creating CAZymes file in BED format to intersect and calculate CAZymes density
 
@@ -532,15 +528,42 @@ join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" -
 
 # Intersect CAZymes with sliding windows
 
-bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${CAZYME_ANNOTATION_DIR}${STRAIN}_cazymes.bed" -c -sorted > "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_cazymes_density.bed"
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${CAZYME_ANNOTATION_DIR}${STRAIN}_cazymes.bed" -c -sorted > "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_CAZymes_density.bed"
 
 # Adding karyotype tag to the CAZymes density files
 
-sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_cazymes_density.bed"
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_CAZymes_density.bed"
 
 # Adjusting CAZyme density file for Circos plot with telomeres
 
-awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_cazymes_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_cazymes_density_for_telomeres.bed"
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_CAZymes_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_CAZymes_density_for_telomeres.bed"
+
+fi
+
+###########################
+#     Gene expression     #
+###########################
+
+# For the gene expression, I organized my sliding windows and density files with the help of other scripts in shell and R.
+# Given this, this script step just copies the files from other folder inside Circos folder, as it is easier to parse it like this in Circos conf file.
+# If you decide to put these steps inside this script, remember to change the files accordingly.
+
+if  [[ ${TRACK_01} == "expression" ]] || [[ ${TRACK_02} == "expression" ]] || [[ ${TRACK_03} == "expression" ]] || [[ ${TRACK_04} == "expression" ]] || [[ ${TRACK_05} == "expression" ]] || [[ ${TRACK_06} == "expression" ]] || [[ ${TRACK_07} == "expression" ]] || [[ ${TRACK_08} == "expression" ]] || [[ ${TRACK_09} == "expression" ]]
+then
+
+# Creating expression folders if necessary
+
+[ -d "${WORK_DIR}${INTERSECT_EXPRESSION_DIR}" ] && echo "The folder ${INTERSECT_EXPRESSION_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_EXPRESSION_DIR}"
+
+cp "${EXPRESSION_PATH}${STRAIN}.tab" "${WORK_DIR}${INTERSECT_EXPRESSION_DIR}${STRAIN}_expression_density.bed"
+
+# Adding karyotype tag to the TE density files
+
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_EXPRESSION_DIR}${STRAIN}_expression_density.bed"
+
+# Adjusting TE density file for Circos plot with telomeres
+
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_EXPRESSION_DIR}${STRAIN}_expression_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_EXPRESSION_DIR}${STRAIN}_expression_density_for_telomeres.bed"
 
 fi
 
@@ -548,8 +571,16 @@ fi
 # Species-specific genes #
 ##########################
 
-if  [[ ${SPECIES_SPECIFIC_OPTION_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "species_specific" ]] || [[ ${TRACK_02} == "species_specific" ]] || [[ ${TRACK_03} == "species_specific" ]] || [[ ${TRACK_04} == "species_specific" ]] || [[ ${TRACK_05} == "species_specific" ]] || [[ ${TRACK_06} == "species_specific" ]] || [[ ${TRACK_07} == "species_specific" ]] || [[ ${TRACK_08} == "species_specific" ]] || [[ ${TRACK_09} == "species_specific" ]]
 then
+
+# Creating species-specific folders if necessary
+
+[ -d "${WORK_DIR}${SPECIES_SPECIFIC_DIR}" ] && echo "The folder ${SPECIES_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${SPECIES_SPECIFIC_DIR}"
+
+[ -d "${WORK_DIR}${SPECIES_SPECIFIC_SUPPORT_DIR}" ] && echo "The folder ${SPECIES_SPECIFIC_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${SPECIES_SPECIFIC_SUPPORT_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}" ] && echo "The folder ${INTERSECT_SPECIES_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}"
 
 # Retrieving orthogroups for the strain of interest from ProteinOrtho output file. We need to check the number of the column for the respective strain. Moreover, here we will extract genes that are found in all isolates from the same species of the strain of interest, but are not found in other species (species-specific). For example, if you use 5 isolates of the same species, you will need genes with the gene count equal to or lower than five. 
 
@@ -633,13 +664,21 @@ fi
 # Strain-specific genes #
 #########################
 
-if  [[ ${STRAIN_SPECIFIC_OPTION} == "true" ]]
+if  [[ ${TRACK_01} == "strain_specific" ]] || [[ ${TRACK_02} == "strain_specific" ]] || [[ ${TRACK_03} == "strain_specific" ]] || [[ ${TRACK_04} == "strain_specific" ]] || [[ ${TRACK_05} == "strain_specific" ]] || [[ ${TRACK_06} == "strain_specific" ]] || [[ ${TRACK_07} == "strain_specific" ]] || [[ ${TRACK_08} == "strain_specific" ]] || [[ ${TRACK_09} == "strain_specific" ]]
 then
+
+# Creating strain-specific folders if necessary
+
+[ -d "${WORK_DIR}${STRAIN_SPECIFIC_DIR}" ] && echo "The folder ${STRAIN_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${STRAIN_SPECIFIC_DIR}"
+
+[ -d "${WORK_DIR}${STRAIN_SPECIFIC_SUPPORT_DIR}" ] && echo "The folder ${STRAIN_SPECIFIC_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${STRAIN_SPECIFIC_SUPPORT_DIR}"
+
+[ -d "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}" ] && echo "The folder ${INTERSECT_STRAIN_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}"
 
 # Retrieving orthogroups for the strain of interest from ProteinOrtho output file. Here we need to check only the number of the column for the respective strain. 
 
 # Discovering number of column for the strain in original orthologs file
-# It would be perfectly possible to use the same variable assigned in the previous section, but I decided not to
+# It would be perfectly possible to use the same variable assigned in the previous section, but I decided not to, just in case I need to develop new functions and commands related to this variable in the future. On the other hand, if you prefer to simply your script and use the same variable for both situations, make the change accordingly.
 
 sed -e 's/\t/\n&/g;q' "${ORTHOLOG}" | nl | sed "/${STRAIN}.faa/!d" | cut -f1 | sed 's/ //g' > "${WORK_DIR}${STRAIN_SPECIFIC_SUPPORT_DIR}${STRAIN}_column_ortholog.txt"
 
@@ -667,6 +706,103 @@ awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_D
 
 fi
 
+##################################
+# Circos pre-configuration files #
+##################################
+
+# Keeping just the right plots inside <plots> block according to informed flags when running the script
+
+# First copy the base-template file for a "pre-template" before cutoff settings
+
+cp "${TEMPLATE_CONF}" "${PRE_TEMPLATE_CONF}"
+
+cp "${TEMPLATE_TELOMERE_CONF}" "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+sed -i "s|TRACK_01|${TRACK_01}|g;s|TRACK_02|${TRACK_02}|g;s|TRACK_03|${TRACK_03}|g;s|TRACK_04|${TRACK_04}|g;s|TRACK_05|${TRACK_05}|g;s|TRACK_06|${TRACK_06}|g;s|TRACK_07|${TRACK_07}|g;s|TRACK_08|${TRACK_08}|g;s|TRACK_09|${TRACK_09}|g;" "${PRE_TEMPLATE_CONF}"
+
+sed -i "s|TRACK_01|${TRACK_01}|g;s|TRACK_02|${TRACK_02}|g;s|TRACK_03|${TRACK_03}|g;s|TRACK_04|${TRACK_04}|g;s|TRACK_05|${TRACK_05}|g;s|TRACK_06|${TRACK_06}|g;s|TRACK_07|${TRACK_07}|g;s|TRACK_08|${TRACK_08}|g;s|TRACK_09|${TRACK_09}|g;" "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+if [[ ${TRACK_01} == "genes" ]] || [[ ${TRACK_01} == "TEs" ]] || [[ ${TRACK_01} == "species_specific" ]] || [[ ${TRACK_01} == "strain_specific" ]] || [[ ${TRACK_01} == "expression" ]] || [[ ${TRACK_01} == "CAZymes" ]] || [[ ${TRACK_01} == "proteases" ]] || [[ ${TRACK_01} == "lipases" ]] || [[ ${TRACK_01} == "effectors" ]] || [[ ${TRACK_01} == "BGCs" ]]
+then
+
+sed -i 's/#1!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#1!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_02} == "genes" ]] || [[ ${TRACK_02} == "TEs" ]] || [[ ${TRACK_02} == "species_specific" ]] || [[ ${TRACK_02} == "strain_specific" ]] || [[ ${TRACK_02} == "expression" ]] || [[ ${TRACK_02} == "CAZymes" ]] || [[ ${TRACK_02} == "proteases" ]] || [[ ${TRACK_02} == "lipases" ]] || [[ ${TRACK_02} == "effectors" ]] || [[ ${TRACK_02} == "BGCs" ]]
+then
+
+sed -i 's/#2!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#2!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_03} == "genes" ]] || [[ ${TRACK_03} == "TEs" ]] || [[ ${TRACK_03} == "species_specific" ]] || [[ ${TRACK_03} == "strain_specific" ]] || [[ ${TRACK_03} == "expression" ]] || [[ ${TRACK_03} == "CAZymes" ]] || [[ ${TRACK_03} == "proteases" ]] || [[ ${TRACK_03} == "lipases" ]] || [[ ${TRACK_03} == "effectors" ]] || [[ ${TRACK_03} == "BGCs" ]]
+then
+
+sed -i 's/#3!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#3!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_04} == "genes" ]] || [[ ${TRACK_04} == "TEs" ]] || [[ ${TRACK_04} == "species_specific" ]] || [[ ${TRACK_04} == "strain_specific" ]] || [[ ${TRACK_04} == "expression" ]] || [[ ${TRACK_04} == "CAZymes" ]] || [[ ${TRACK_04} == "proteases" ]] || [[ ${TRACK_04} == "lipases" ]] || [[ ${TRACK_04} == "effectors" ]] || [[ ${TRACK_04} == "BGCs" ]]
+then
+
+sed -i 's/#4!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#4!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_05} == "genes" ]] || [[ ${TRACK_05} == "TEs" ]] || [[ ${TRACK_05} == "species_specific" ]] || [[ ${TRACK_05} == "strain_specific" ]] || [[ ${TRACK_05} == "expression" ]] || [[ ${TRACK_05} == "CAZymes" ]] || [[ ${TRACK_05} == "proteases" ]] || [[ ${TRACK_05} == "lipases" ]] || [[ ${TRACK_05} == "effectors" ]] || [[ ${TRACK_05} == "BGCs" ]]
+then
+
+sed -i 's/#5!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#5!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_06} == "genes" ]] || [[ ${TRACK_06} == "TEs" ]] || [[ ${TRACK_06} == "species_specific" ]] || [[ ${TRACK_06} == "strain_specific" ]] || [[ ${TRACK_06} == "expression" ]] || [[ ${TRACK_06} == "CAZymes" ]] || [[ ${TRACK_06} == "proteases" ]] || [[ ${TRACK_06} == "lipases" ]] || [[ ${TRACK_06} == "effectors" ]] || [[ ${TRACK_06} == "BGCs" ]]
+then
+
+sed -i 's/#6!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#6!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_07} == "genes" ]] || [[ ${TRACK_07} == "TEs" ]] || [[ ${TRACK_07} == "species_specific" ]] || [[ ${TRACK_07} == "strain_specific" ]] || [[ ${TRACK_07} == "expression" ]] || [[ ${TRACK_07} == "CAZymes" ]] || [[ ${TRACK_07} == "proteases" ]] || [[ ${TRACK_07} == "lipases" ]] || [[ ${TRACK_07} == "effectors" ]] || [[ ${TRACK_07} == "BGCs" ]]
+then
+
+sed -i 's/#7!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#7!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_08} == "genes" ]] || [[ ${TRACK_08} == "TEs" ]] || [[ ${TRACK_08} == "species_specific" ]] || [[ ${TRACK_08} == "strain_specific" ]] || [[ ${TRACK_08} == "expression" ]] || [[ ${TRACK_08} == "CAZymes" ]] || [[ ${TRACK_08} == "proteases" ]] || [[ ${TRACK_08} == "lipases" ]] || [[ ${TRACK_08} == "effectors" ]] || [[ ${TRACK_08} == "BGCs" ]]
+then
+
+sed -i 's/#8!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#8!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
+if [[ ${TRACK_09} == "genes" ]] || [[ ${TRACK_09} == "TEs" ]] || [[ ${TRACK_09} == "species_specific" ]] || [[ ${TRACK_09} == "strain_specific" ]] || [[ ${TRACK_09} == "expression" ]] || [[ ${TRACK_09} == "CAZymes" ]] || [[ ${TRACK_09} == "proteases" ]] || [[ ${TRACK_09} == "lipases" ]] || [[ ${TRACK_09} == "effectors" ]] || [[ ${TRACK_09} == "BGCs" ]]
+then
+
+sed -i 's/#9!//g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#9!//g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
+
 ##############################
 # Circos configuration files #
 ##############################
@@ -677,11 +813,11 @@ then
 
 # Without telomeres
 
-	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF||g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|" "${TEMPLATE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_CONF}"
+	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF||g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|" "${PRE_TEMPLATE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_CONF}"
  
 # With telomeres
 
-	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF||g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|" "${TEMPLATE_TELOMERE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_TELOMERE_CONF}"
+	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF||g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order.txt")|" "${PRE_TEMPLATE_TELOMERE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_TELOMERE_CONF}"
 
 else 
 
@@ -698,13 +834,13 @@ else
 	sed -i '$ s/.$//' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order_cutoff.txt"
 	sed -i '$ s/.$//' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order_cutoff.txt"
 
-	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF|_cutoff|g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order_cutoff.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|" "${TEMPLATE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_CONF}"
+	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF|_cutoff|g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order_cutoff.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|" "${PRE_TEMPLATE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_CONF}"
 
 # With telomeres
 
 	head -n "$CUTOFF" "${WORK_DIR}${KARYOTYPE_DIR}${STRAIN}_for_telomeres.karyotypes" > "${WORK_DIR}${KARYOTYPE_DIR}${STRAIN}_for_telomeres_cutoff.karyotypes"
 
-	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF|_cutoff|g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order_cutoff.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|" "${TEMPLATE_TELOMERE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_TELOMERE_CONF}"
+	sed "s|STRAIN|${STRAIN}|g;s|_CUTOFF|_cutoff|g;s|CHR_ORDER|$(cat "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_chr_order_cutoff.txt")|;s|FIRST_CHR|$(sed -n '1p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|;s|LAST_CHR|$(sed -n '$p' "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}${STRAIN}_for_chr_order_cutoff.txt")|" "${PRE_TEMPLATE_TELOMERE_CONF}" | sed -e "s|WORKDIR/|$WORK_DIR|" > "${CIRCOS_TELOMERE_CONF}"
 
 fi
 
