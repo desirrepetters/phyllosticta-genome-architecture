@@ -5,7 +5,7 @@
 #      Preparation for Circos conf file for Circos plot         #
 #  Written by Desirrê Petters-Vandresen & Bruno Janoski Rossi   # 
 #                in the 1st Trimester of 2021                   #
-#                Last modified = 26/03/2021                     #
+#                Last modified = 15/09/2021                     #
 #                                                               #
 #################################################################
 
@@ -19,7 +19,7 @@ Help()
    echo "                         Circos prep script                             "
    echo
    echo "Written by Desirrê Petters-Vandresen & Bruno Janoski Rossi in March 2021"
-   echo "Last modified: 26/03/2021"
+   echo "Last modified: 15/09/2021"
    echo
    echo "For updates, check https://github.com/desirrepetters"
    echo
@@ -35,7 +35,10 @@ Help()
    echo "  - TE density (TE annotation in GFF3 format, here using outputs from the REPET pipeline"
    echo "  - Effector density (Effector list, here using output from the effector prediction pipeline of Feurtey and Lorrain et al. 2020 (DOI: 10.1186/s12864-020-06871-w)"
    echo "  - Biosynthetic gene clusters density (BGCs list, here using output from Antismash, the geneclusters.txt file)"
-   echo "  - CAZyme density (CAZyme list, here using output from dbCAN2 and considering only CAZymes predicted by >= 2 tools"
+   echo "  - CAZyme density (CAZyme list, here using output from dbCAN2 and considering only CAZymes predicted by >= 2 tools)"
+   echo "  - Proteases density (proteases list, here using output from a blastP search against MEROPS database"
+   echo "  - Lipases density (lipases list, here using output from a HMMER search against Lipase Engineering Database hmm models"
+   echo "  - Gene expression (here using output from HT-Seq and exonsBy from GenomicFeatures R package)"
    echo "  - Species-specific gene density and strain-specific gene density (Ortholog groups table, here using output file from ProteinOrtho)"
    echo
    echo "The script can be adapted to include more tracks or remove some of the tracks (by commenting respective lines)"
@@ -53,28 +56,95 @@ Help()
    echo
    echo "  options:"
    echo
-   echo "  -s     Strain name. For the script to work, the strain name has to be exactly the same in all the required annotation files, ortholog table headers and so on, and works as an identifier to the strain to be analysed. For example, a strain name could be PCapitalensis_CBS128856, where PCapitalensis represents the species and CBS128856 is the code for the specific strain"
+   echo "  --strain // -s         Strain name. For the script to work, the strain name has to be exactly the same in all the required annotation files, ortholog table headers and so on, and works as an identifier to the strain to be analysed. For example, a strain name could be PCapitalensis_CBS128856, where PCapitalensis represents the species and CBS128856 is the code for the specific strain"
    echo
-   echo "  -t     Strain tag. This tag included in some output files and tracks allows the files to be re-used in synteny Circos plots, for example. A good tag is short but contains useful information to identify the strain. For example, for the strain PCapitalensis_CBS128856 a possible tag could be Cap128_ or Cap128856_. Always remember to finish the tag with an underline"
+   echo "  --tag // -t            Strain tag. This tag included in some output files and tracks allows the files to be re-used in synteny Circos plots, for example. A good tag is short but contains useful information to identify the strain. For example, for the strain PCapitalensis_CBS128856 a possible tag could be Cap128_ or Cap128856_. Always remember to finish the tag with an underline"
    echo
-   echo "  -p     Species. Including the species code helps parsing the orthologs table later and identifying isolates belonging to the same species of the strain being analysed. For the script to work, all strains from the same species in the ortholog table need to have the same species name. For example, in the table you would have PCapitalensis_CBS128856 and PCapitalensis_CBS356_52 representing two isolates from the species PCapitalensis, so in the -p option you would state PCapitalensis"
+   echo "  --species // -p        Species. Including the species code helps parsing the orthologs table later and identifying isolates belonging to the same species of the strain being analysed. For the script to work, all strains from the same species in the ortholog table need to have the same species name. For example, in the table you would have PCapitalensis_CBS128856 and PCapitalensis_CBS356_52 representing two isolates from the species PCapitalensis, so in the -p option you would state PCapitalensis"
    echo
-   echo "  -c     Cutoff. Use this to limit the total number of scaffolds/contigs to be included in the plot when the assembly is too fragmented. If you do not want to set a limit, use -c ALL. Scaffolds/contigs in the final plot will be ordered from largest to smallest, so, for example, if you set -c as 10, the Circos plot will show only the 10 largest scaffolds/contigs. Note that this can mean showing scaffolds/contigs 1 to 10 if your original assembly was already ordered and numbered from largest to smallest, however, if you original assembly was not ordered this way, it will show the largest contigs, whatever their number may be."
+   echo "  --cutoff // -c         Cutoff. Use this to limit the total number of scaffolds/contigs to be included in the plot when the assembly is too fragmented. If you do not want to set a limit, use -c ALL. Scaffolds/contigs in the final plot will be ordered from largest to smallest, so, for example, if you set -c as 10, the Circos plot will show only the 10 largest scaffolds/contigs. Note that this can mean showing scaffolds/contigs 1 to 10 if your original assembly was already ordered and numbered from largest to smallest, however, if you original assembly was not ordered this way, it will show the largest contigs, whatever their number may be."
    echo
+   echo "  --genes // -G          Genes. Use this to add a gene density track to the final Circos plot. Requires a gene annotation file in GFF3 format to be provided."
+   echo
+   echo "  --TEs // -T            TEs. Use this to add a TEs density track to the final Circos plot. Requires a TE annotation file in GFF3 format to be provided, like the output from REPET pipeline."
+   echo
+   echo "  --spspecific // -S     Species-specific genes. Use this to add a species-specific gene density track to the final Circos plot. Requires a ProteinOrtho or PoFF output file to be provided."
+   echo
+   echo "  --stspecific // -I     Strain-specific genes. Use this to add a strain-specific gene density track to the final Circos plot. Requires a ProteinOrtho or PoFF output file to be provided."
+   echo
+   echo "  --expression // -E     Gene expression. Use this to add a gene expression density track to the final Circos plot. Requires a read-count-per-gene file to be provided."
+   echo  
+   echo "  --effectors // -F      Effectors. Use this to add a effector density track to the final Circos plot. Requires a file with an effector genes list to be provided."
+   echo  
+   echo "  --cazymes // -C        CAZymes. Use this to add a CAZyme density track to the final Circos plot. Requires a file with a CAZymes genes list to be provided."
+   echo  
+   echo "  --proteases // -P      Proteases. Use this to add a protease density track to the final Circos plot. Requires a file with a proteases genes list to be provided."
+   echo
+   echo "  --lipases // -L      Lipases. Use this to add a lipase density track to the final Circos plot. Requires a file with a lipases genes list to be provided."
+   echo 
+   echo "  --BGCs // -B      BGCs. Use this to add a BGC density track to the final Circos plot. Requires a file with a BGCs genes list to be provided."
+   echo    
    echo "  -*     Print this Help."
    echo
 }
 
 ################################################################################
 
-while getopts "s:t:p:c:" flag;
+## Transforming long options in short ones
+
+for arg in "$@"; do
+	shift
+	case "$arg" in
+	"--strain") set -- "$@" "-s" ;;
+	"--tag") set -- "$@" "-t" ;;
+	"--species") set -- "$@" "-p" ;;
+	"--cutoff") set -- "$@" "-c" ;;
+	"--genes") set -- "$@" "-G" ;;
+	"--TEs") set -- "$@" "-T" ;;
+	"--spspecific") set -- "$@" "-S" ;;
+	"--stspecific") set -- "$@" "-I"
+	"--expression") set -- "$@" "-E" ;;
+	"--effectors") set -- "$@" "-F";;
+	"--cazymes") set -- "$@" "-C" ;;
+	"--proteases") set -- "$@" "-P" ;;
+	"--lipases") set -- "$@" "-L" ;;
+	"--BGCs") set -- "$@" -"B" ;;
+	esac
+done
+
+# Default behaviour
+
+GENES_OPTION=false
+TE_OPTION=false
+SPECIES_SPECIFIC_OPTION=false
+STRAIN_SPECIFIC_OPTION=false
+EXPRESSION_OPTION=false
+EFFECTORS_OPTION=false
+CAZYMES_OPTION=false
+PROTEASES_OPTION=false
+LIPASES_OPTION=false
+BGS_OPTION=false
+
+
+while getopts "s:t:p:c:G:T:S:E:F:C:P:L:B" flag;
 do
     case "${flag}" in
         s) STRAIN=${OPTARG};;
         t) STRAIN_TAG=${OPTARG};;
         p) SPECIES=${OPTARG};;
 		c) SET_CUTOFF=${OPTARG};;
+		G) GENES_OPTION=true;;
+		T) TE_OPTION=true;;
+		S) SPECIES_SPECIFIC_OPTION=true;;
+		I) STRAIN_SPECIFIC_OPTION=true ;;
+		E) EXPRESSION_OPTION=true;;
+		F) EFFECTORS_OPTION=true;;
+		C) CAZYMES_OPTION=true;;
+		P) PROTEASES_OPTION=true;;
+		L) LIPASES_OPTION=true;;
+		B) BGCS_OPTION=true;;
 		*) Help
+		
 		exit 1 ;;
     esac
 done
@@ -88,6 +158,8 @@ TELOMERE_PATH="/PATH/TO/TELOMERE_ANNOTATION_FILE/"
 EFFECTOR_PATH="/PATH/TO/EFFECTOR_LIST_FILE/"
 CAZYME_PATH="/PATH/TO/CAZYME_LIST_FILE/"
 BGC_PATH="/PATH/TO/BGC_LIST_FILE/"
+PROTEASE_PATH="/PATH/TO/PROTEASE_LIST_FILE/"
+LIPASE_PATH="/PATH/TO/LIPASE_LIST_FILE/"
 ORTHOLOG_PATH="/PATH/TO/ORTHOLOGS_FILE/"
 TEMPLATE_PATH="/PATH/TO/CIRCOS_CONF_TEMPLATE_FILE/"
 
@@ -119,11 +191,17 @@ INTERSECT_BGC_DIR="Intersects of BGCs vs. 10kb sliding windows/"
 INTERSECT_CAZYME_DIR="Intersects of CAZymes vs. 10kb sliding windows/"
 INTERSECT_EFFECTOR_DIR="Intersects of effectors vs. 10kb sliding windows/"
 INTERSECT_GENE_DIR="Intersects of genes vs. 10kb sliding windows/"
+INTERSECT_LIPASE_DIR="Intersects of lipases vs. 10kb sliding windows/"
+INTERSECT_PROTEASE_DIR="Intersects of proteases vs. 10kb sliding windows/"
 INTERSECT_SPECIES_SPECIFIC_DIR="Intersects of species specific genes vs. 10kb sliding windows/"
 INTERSECT_STRAIN_SPECIFIC_DIR="Intersects of strain specific genes vs. 10kb sliding windows/"
 INTERSECT_TE_DIR="Intersects of TEs vs. 10kb sliding windows/"
 KARYOTYPE_DIR="Karyotypes files/"
 KARYOTYPE_SUPPORT_DIR="Karyotypes files/Support files/"
+LIPASE_ANNOTATION_DIR="Lipases (BED files)/"
+LIPASE_ANNOTATION_SUPPORT_DIR="Lipases (BED files)/Support files/"
+PROTEASE_ANNOTATION_DIR="Proteases (BED files)/"
+PROTEASE_ANNOTATION_SUPPORT_DIR="Proteases (BED files)/Support files/"
 SPECIES_SPECIFIC_DIR="Species-specific genes (BED files)/"
 SPECIES_SPECIFIC_SUPPORT_DIR="Species-specific genes (BED files)/Support files/"
 STRAIN_SPECIFIC_DIR="Strain-specific genes (BED files)/"
@@ -154,11 +232,17 @@ TE_DIR="TEs Annotation (BED files)/"
 [ -d "${WORK_DIR}${INTERSECT_CAZYME_DIR}" ] && echo "The folder ${INTERSECT_CAZYME_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_CAZYME_DIR}"
 [ -d "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}" ] && echo "The folder ${INTERSECT_EFFECTOR_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}"
 [ -d "${WORK_DIR}${INTERSECT_GENE_DIR}" ] && echo "The folder ${INTERSECT_GENE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_GENE_DIR}"
+[ -d "${WORK_DIR}${INTERSECT_LIPASE_DIR}" ] && echo "The folder ${INTERSECT_LIPASE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_LIPASE_DIR}"
+[ -d "${WORK_DIR}${INTERSECT_PROTEASE_DIR}" ] && echo "The folder ${INTERSECT_PROTEASE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_PROTEASE_DIR}"
 [ -d "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}" ] && echo "The folder ${INTERSECT_SPECIES_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}"
 [ -d "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}" ] && echo "The folder ${INTERSECT_STRAIN_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}"
 [ -d "${WORK_DIR}${INTERSECT_TE_DIR}" ] && echo "The folder ${INTERSECT_TE_DIR} already exists!" || mkdir "${WORK_DIR}${INTERSECT_TE_DIR}"
 [ -d "${WORK_DIR}${KARYOTYPE_DIR}" ] && echo "The folder ${KARYOTYPE_DIR} already exists!" || mkdir "${WORK_DIR}${KARYOTYPE_DIR}"
 [ -d "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}" ] && echo "The folder ${KARYOTYPE_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${KARYOTYPE_SUPPORT_DIR}"
+[ -d "${WORK_DIR}${LIPASE_ANNOTATION_DIR}" ] && echo "The folder ${LIPASE_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${LIPASE_ANNOTATION_DIR}"
+[ -d "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${LIPASE_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}"
+[ -d "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}" ] && echo "The folder ${PROTEASE_ANNOTATION_DIR} already exists!" || mkdir "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}"
+[ -d "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}" ] && echo "The folder ${PROTEASE_ANNOTATION_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}"
 [ -d "${WORK_DIR}${SPECIES_SPECIFIC_DIR}" ] && echo "The folder ${SPECIES_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${SPECIES_SPECIFIC_DIR}"
 [ -d "${WORK_DIR}${SPECIES_SPECIFIC_SUPPORT_DIR}" ] && echo "The folder ${SPECIES_SPECIFIC_SUPPORT_DIR} already exists!" || mkdir "${WORK_DIR}${SPECIES_SPECIFIC_SUPPORT_DIR}"
 [ -d "${WORK_DIR}${STRAIN_SPECIFIC_DIR}" ] && echo "The folder ${STRAIN_SPECIFIC_DIR} already exists!" || mkdir "${WORK_DIR}${STRAIN_SPECIFIC_DIR}"
@@ -177,6 +261,8 @@ EFFECTOR="${EFFECTOR_PATH}${STRAIN}.effectors.tab"
 CAZYME="${CAZYME_PATH}${STRAIN}.txt"
 BGC="${BGC_PATH}${STRAIN}.txt"
 ORTHOLOG="${ORTHOLOG_PATH}Orthology_groups.tabular"
+PROTEASE="${PROTEASE_PATH}${STRAIN}_merops.txt"
+LIPASE="${LIPASE_PATH}${STRAIN}_lipases.tab"
 
 TEMPLATE_CONF="${TEMPLATE_PATH}Template.conf"
 TEMPLATE_TELOMERE_CONF="${TEMPLATE_PATH}Template_for_telomeres.conf"
@@ -299,6 +385,9 @@ awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_D
 # Effectors #
 #############
 
+if  [[ ${EFFECTORS_OPTION} == "true" ]]
+then
+
 sed '/#/d' "${EFFECTOR}" > "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header.tab"
 
 sort -Vk1 "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header.tab" > "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header_sorted.tab"
@@ -315,10 +404,60 @@ sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effecto
 
 awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effector_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_EFFECTOR_DIR}${STRAIN}_effector_density_for_telomeres.bed"
 
+fi
+
+#############
+# Proteases #
+#############
+
+if  [[ ${PROTEASES_OPTION} == "true" ]]
+then
+
+sort -Vk1 "${PROTEASE}" > "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_proteases_sorted.tab"
+
+join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_sorted.bed" "${WORK_DIR}${PROTEASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_proteases_sorted.tab" > "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}${STRAIN}_proteases.bed"
+
+# Intersect proteases with sliding windows
+
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${PROTEASE_ANNOTATION_DIR}${STRAIN}_proteases.bed" -c -sorted > "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density.bed"
+
+# Adding karyotype tag to the protease density files
+
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density.bed"
+
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_PROTEASE_DIR}${STRAIN}_protease_density_for_telomeres.bed"
+
+fi
+
+#############
+# Lipases #
+#############
+
+if  [[ ${LIPASES_OPTION} == "true" ]]
+then
+
+sort -Vk1 "${LIPASE}" > "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_lipases_sorted.tab"
+
+join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_sorted.bed" "${WORK_DIR}${LIPASE_ANNOTATION_SUPPORT_DIR}${STRAIN}_lipases_sorted.tab" > "${WORK_DIR}${LIPASE_ANNOTATION_DIR}${STRAIN}_lipases.bed"
+
+# Intersect lipases with sliding windows
+
+bedtools intersect -a "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" -b "${WORK_DIR}${LIPASE_ANNOTATION_DIR}${STRAIN}_lipases.bed" -c -sorted > "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density.bed"
+
+# Adding karyotype tag to the lipase density files
+
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density.bed"
+
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_LIPASE_DIR}${STRAIN}_lipase_density_for_telomeres.bed"
+
+fi
 
 #########################
 # Transposable elements #
 #########################
+
+if  [[ ${TE_OPTION} == "true" ]]
+then
 
 # Converting TE annotation from GFF3 to BED format
 
@@ -348,9 +487,14 @@ awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_D
 
 awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density_no_SSR.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_TE_DIR}${STRAIN}_TE_density_for_telomeres_no_SSR.bed"
 
+fi
+
 #####################################
 # Biosynthetic Gene Clusters (BGCs) #
 #####################################
+
+if  [[ ${BGCS_OPTION} == "true" ]]
+then
 
 # Creating BGCs file in BED format to intersect and calculate BGC density
  
@@ -370,9 +514,14 @@ sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGC_density.
 
 awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGC_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_BGC_DIR}${STRAIN}_BGC_density_for_telomeres.bed"
 
+fi
+
 ###########
 # CAZymes #
 ###########
+
+if  [[ ${CAZYMES_OPTION_OPTION} == "true" ]]
+then
 
 # Creating CAZymes file in BED format to intersect and calculate CAZymes density
 
@@ -392,9 +541,14 @@ sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_cazymes_d
 
 awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_cazymes_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_CAZYME_DIR}${STRAIN}_cazymes_density_for_telomeres.bed"
 
+fi
+
 ##########################
 # Species-specific genes #
 ##########################
+
+if  [[ ${SPECIES_SPECIFIC_OPTION_OPTION} == "true" ]]
+then
 
 # Retrieving orthogroups for the strain of interest from ProteinOrtho output file. We need to check the number of the column for the respective strain. Moreover, here we will extract genes that are found in all isolates from the same species of the strain of interest, but are not found in other species (species-specific). For example, if you use 5 isolates of the same species, you will need genes with the gene count equal to or lower than five. 
 
@@ -472,10 +626,14 @@ sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}${STRAIN}
 
 awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}${STRAIN}_species_specific_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_SPECIES_SPECIFIC_DIR}${STRAIN}_species_specific_density_for_telomeres.bed"
 
+fi
 
 #########################
 # Strain-specific genes #
 #########################
+
+if  [[ ${STRAIN_SPECIFIC_OPTION} == "true" ]]
+then
 
 # Retrieving orthogroups for the strain of interest from ProteinOrtho output file. Here we need to check only the number of the column for the respective strain. 
 
@@ -505,6 +663,8 @@ sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}${STRAIN}_
 # Adjusting strain specific genes density file for Circos plot with telomeres
 
 awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}${STRAIN}_strain_specific_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_STRAIN_SPECIFIC_DIR}${STRAIN}_strain_specific_density_for_telomeres.bed"
+
+fi
 
 ##############################
 # Circos configuration files #
