@@ -5,7 +5,7 @@
 #      Preparation for Circos conf file for Circos plot         #
 #  Written by Desirrê Petters-Vandresen & Bruno Janoski Rossi   # 
 #                in the 1st Trimester of 2021                   #
-#                Last modified = 15/09/2021                     #
+#                Last modified = 22/09/2021                     #
 #                                                               #
 #################################################################
 
@@ -19,7 +19,7 @@ Help()
    echo "                         Circos prep script                             "
    echo
    echo "Written by Desirrê Petters-Vandresen & Bruno Janoski Rossi in March 2021"
-   echo "Last modified: 15/09/2021"
+   echo "Last modified: 22/09/2021"
    echo
    echo "For updates, check https://github.com/desirrepetters"
    echo
