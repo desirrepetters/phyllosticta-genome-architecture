@@ -90,13 +90,14 @@ Help()
 
 ################################################################################
 
-while getopts "s:t:p:c:1::2::3::4::5::6::7::8::9::" flag;
+while getopts "s:t:p:c::g:1::2::3::4::5::6::7::8::9::" flag;
 do
     case "${flag}" in
         s) STRAIN=${OPTARG};;
         t) STRAIN_TAG=${OPTARG};;
         p) SPECIES=${OPTARG};;
 		c) SET_CUTOFF=${OPTARG};;
+		g) SET_GC_CONTENT=${OPTARG};;
 		1) SET_TRACK_01=${OPTARG};;
 		2) SET_TRACK_02=${OPTARG};;
 		3) SET_TRACK_03=${OPTARG};;
@@ -116,6 +117,7 @@ shift $(expr $OPTIND - 1)
 # Adjusting arguments to work on sed
 
 CUTOFF=$SET_CUTOFF
+GC_CONTENT=$SET_GC_CONTENT
 TRACK_01=$SET_TRACK_01
 TRACK_02=$SET_TRACK_02
 TRACK_03=$SET_TRACK_03
@@ -128,21 +130,21 @@ TRACK_09=$SET_TRACK_09
 
 # Genome, annotation and prediction foldes
 # Remember to adjust to corresponding paths in your system
-GENOME_PATH="/PATH/TO/GENOME_FILE/"
-GENE_ANNOTATION_PATH="/PATH/TO/GENE_ANNOTATION_FILE/"
-TE_PATH="/PATH/TO/TE_ANNOTATION_FILE/"
-TELOMERE_PATH="/PATH/TO/TELOMERE_ANNOTATION_FILE/"
-EXPRESSION_PATH="/PATH/TO/GENE_EXPRESSION_FILE/"
-EFFECTOR_PATH="/PATH/TO/EFFECTOR_LIST_FILE/"
-CAZYME_PATH="/PATH/TO/CAZYME_LIST_FILE/"
-BGC_PATH="/PATH/TO/BGC_LIST_FILE/"
-PROTEASE_PATH="/PATH/TO/PROTEASE_LIST_FILE/"
-LIPASE_PATH="/PATH/TO/LIPASE_LIST_FILE/"
-ORTHOLOG_PATH="/PATH/TO/ORTHOLOGS_FILE/"
-TEMPLATE_PATH="/PATH/TO/CIRCOS_CONF_TEMPLATE_FILE/"
+GENOME_PATH="/mnt/h/Bibliotecas/Documentos/Genomes/Phyllosticta/"
+GENE_ANNOTATION_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Gene Annotation/GFF3 files for PoFF/"
+TE_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Transposable Elements/TE annotation/"
+TELOMERE_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Genomic Architecture/Telomeres/"
+EXPRESSION_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/RNAseq analysis/Log10 gene expression (exons)/"
+EFFECTOR_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Functional annotation/Effectors (v3)/"
+CAZYME_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Functional annotation/CAZymes/"
+BGC_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Functional annotation/Biosynthetic gene clusters (v6)/"
+PROTEASE_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Functional annotation/Proteases/"
+LIPASE_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Functional annotation/Lipases/"
+ORTHOLOG_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Genomic Architecture/Orthologs/ProteinOrtho/Pseudofusicoccum (Best Assemblies)/"
+TEMPLATE_PATH="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Genomic Architecture/"
 
 # Path to working directory
-WORK_DIR="/PATH/TO/WORK_DIR/"
+WORK_DIR="/mnt/h/Bibliotecas/Documentos/Google Drive/(2011-2018) - BioGeMM/(2018-2022) - PhD/Genomic Architecture/Circos plot/"
 
 # Working directories for better organization
 # These directories are optional, but if you comment this section, remember to change the rest of the script accordingly
@@ -165,6 +167,7 @@ FILE_PREP_KARYOTYPE_TAIL_DIR="File preparation/Karyotype tail/"
 FILE_PREP_SCAFFOLD_COLUMN_DIR="File preparation/Scaffold column/"
 FILE_PREP_SCAFFOLD_TAG_DIR="File preparation/Scaffold tag/"
 GENE_ANNOTATION_DIR="Gene Annotation (BED files)/"
+GC_CONTENT_DIR="GC content (BED files)/"
 GENOME_BED_DIR="Genomes (BED files)/"
 INTERSECT_BGC_DIR="Intersects of BGCs vs. 10kb sliding windows/"
 INTERSECT_CAZYME_DIR="Intersects of CAZymes vs. 10kb sliding windows/"
@@ -217,9 +220,9 @@ GENOME="${GENOME_PATH}${STRAIN}.fasta"
 GENE_ANNOTATION="${GENE_ANNOTATION_PATH}${STRAIN}.gff3"
 TES="${TE_PATH}${STRAIN}.gff3"
 TELOMERE="${TELOMERE_PATH}${STRAIN}.bed"
-EFFECTOR="${EFFECTOR_PATH}${STRAIN}.effectors.tab"
+EFFECTOR="${EFFECTOR_PATH}${STRAIN}_effectors.tab"
 CAZYME="${CAZYME_PATH}${STRAIN}.txt"
-BGC="${BGC_PATH}${STRAIN}.txt"
+BGC="${BGC_PATH}${STRAIN}_clusters.txt"
 ORTHOLOG="${ORTHOLOG_PATH}Orthology_groups.tabular"
 PROTEASE="${PROTEASE_PATH}${STRAIN}_merops.txt"
 LIPASE="${LIPASE_PATH}${STRAIN}_lipases.tab"
@@ -229,7 +232,7 @@ TEMPLATE_TELOMERE_CONF="${TEMPLATE_PATH}Template_for_telomeres.conf"
 PRE_TEMPLATE_CONF="${CIRCOS_PRECONF_DIR}/${STRAIN}_template.conf"
 PRE_TEMPLATE_TELOMERE_CONF="${CIRCOS_PRECONF_DIR}/${STRAIN}_template_for_telomeres.conf"
 
-CIRCOS_PATH=/path/to/circos-0.69-9/bin/circos
+CIRCOS_PATH=/home/desirrepetters/circos-0.69-9/bin/circos
 CIRCOS_CONF="${CIRCOS_SUPPORT_DIR}${STRAIN}.conf"
 CIRCOS_TELOMERE_CONF="${CIRCOS_SUPPORT_DIR}${STRAIN}_telomeres.conf"
 CIRCOS_OUTPUT_FILE="${STRAIN}_${TRACK_01}_${TRACK_02}_${TRACK_03}_${TRACK_04}_${TRACK_05}_${TRACK_06}_${TRACK_07}_${TRACK_08}_${TRACK_09}"
@@ -339,7 +342,26 @@ sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_genes_densi
 
 awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_genes_density.bed" | cut -f1,5-7 > "${WORK_DIR}${INTERSECT_GENE_DIR}${STRAIN}_genes_density_for_telomeres.bed"
 
+##############
+# GC content #
+##############
 
+if [[ ${GC_CONTENT} == "yes" ]]
+then
+
+# Creating GC content dir if necessary
+
+[ -d "${WORK_DIR}${GC_CONTENT_DIR}" ] && echo "The folder ${GC_CONTENT_DIR} already exists!" || mkdir "${WORK_DIR}${GC_CONTENT_DIR}"
+
+bedtools nuc -fi "${GENOME}" -bed "${WORK_DIR}${SLIDING_WINDOW_DIR}${STRAIN}_10kb.bed" | cut -f1-3,5 | sed '/#/d' > "${WORK_DIR}${GC_CONTENT_DIR}${STRAIN}_GC_content.bed"
+
+# Adding karyotype tag to the GC content files
+
+sed -i "s/^/$STRAIN_TAG/" "${WORK_DIR}${GC_CONTENT_DIR}${STRAIN}_GC_content.bed"
+
+awk 'BEGIN {OFS="\t"}; {$5 = $2+50000; $6 = $3+50000; $7 = $4; print}' "${WORK_DIR}${GC_CONTENT_DIR}${STRAIN}_GC_content.bed" | cut -f1,5-7 > "${WORK_DIR}${GC_CONTENT_DIR}${STRAIN}_GC_content_for_telomeres.bed"
+
+fi
 #############
 # Effectors #
 #############
@@ -359,7 +381,7 @@ sed '/#/d' "${EFFECTOR}" > "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAI
 
 sort -Vk1 "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header.tab" > "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header_sorted.tab"
 
-join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10,2.2 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_sorted.bed" "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header_sorted.tab" | sed '/Effector/!d' | cut -f1-10 > "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}${STRAIN}_effectors.bed"
+join -1 4 -2 1 -o 1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.10,2.5 -t "$(printf '\t')" "${WORK_DIR}${GENE_ANNOTATION_DIR}${STRAIN}_sorted.bed" "${WORK_DIR}${EFFECTOR_ANNOTATION_SUPPORT_DIR}${STRAIN}_effector_without_header_sorted.tab" | sed '/effector/!d' | sed '/Non-effector/d' | cut -f1-10 > "${WORK_DIR}${EFFECTOR_ANNOTATION_DIR}${STRAIN}_effectors.bed"
 
 # Intersect effectors with sliding windows
 
@@ -721,6 +743,21 @@ cp "${TEMPLATE_TELOMERE_CONF}" "${PRE_TEMPLATE_TELOMERE_CONF}"
 sed -i "s|TRACK_01|${TRACK_01}|g;s|TRACK_02|${TRACK_02}|g;s|TRACK_03|${TRACK_03}|g;s|TRACK_04|${TRACK_04}|g;s|TRACK_05|${TRACK_05}|g;s|TRACK_06|${TRACK_06}|g;s|TRACK_07|${TRACK_07}|g;s|TRACK_08|${TRACK_08}|g;s|TRACK_09|${TRACK_09}|g;" "${PRE_TEMPLATE_CONF}"
 
 sed -i "s|TRACK_01|${TRACK_01}|g;s|TRACK_02|${TRACK_02}|g;s|TRACK_03|${TRACK_03}|g;s|TRACK_04|${TRACK_04}|g;s|TRACK_05|${TRACK_05}|g;s|TRACK_06|${TRACK_06}|g;s|TRACK_07|${TRACK_07}|g;s|TRACK_08|${TRACK_08}|g;s|TRACK_09|${TRACK_09}|g;" "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+if [[ ${GC_CONTENT} == "yes" ]]
+then
+
+sed -i 's/#gc!//g;s/RADIUS_SIZE/0.825/g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/#gc!//g;s/RADIUS_SIZE/0.825/g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+else
+
+sed -i 's/RADIUS_SIZE/0.90/g' "${PRE_TEMPLATE_CONF}"
+
+sed -i 's/RADIUS_SIZE/0.90/g' "${PRE_TEMPLATE_TELOMERE_CONF}"
+
+fi
 
 if [[ ${TRACK_01} == "genes" ]] || [[ ${TRACK_01} == "TEs" ]] || [[ ${TRACK_01} == "species_specific" ]] || [[ ${TRACK_01} == "strain_specific" ]] || [[ ${TRACK_01} == "expression" ]] || [[ ${TRACK_01} == "CAZymes" ]] || [[ ${TRACK_01} == "proteases" ]] || [[ ${TRACK_01} == "lipases" ]] || [[ ${TRACK_01} == "effectors" ]] || [[ ${TRACK_01} == "BGCs" ]]
 then
