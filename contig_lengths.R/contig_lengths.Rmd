@@ -1,0 +1,1891 @@
+---
+title: "contig_lengths"
+author: "Desirrê Petters-Vandresen"
+date: "01/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Contig lengths thresholds (for Circos plots)
+
+### Background
+
+When producing the Circos plots for some of the *Phyllosticta* genome assemblies, some of the plots were too cluttered, as the assemblies were more fragmented and some of the contigs/scaffolds were too small to be properly depicted in the figure. 
+The idea for the updated Circos plots (the ones included in the final version of the manuscript) is to create some sort of threshold for the contigs that will be included in the plot, excluding contigs that are too small. However, as they will be excluded from the plot, there was the need to somehow show that they do not represent to much information from the genome.
+
+Hence, the need to produce some distribution plots to evaluate and assess how many contigs/scaffolds can be removed without removing important genomic information from plot.
+
+To be more flexible with customization and manually setting the threshold, I refrained from creating a loop (which makes this a very long Markdown file, but there's a version of this script with an implemented for loop in the file ["contig_lengths_with_for_loop.Rmd"](https://github.com/desirrepetters/phyllosticta-genome-architecture/blob/main/contig_lengths.R/contig_lengths_with_for_loop.Rmd)).
+
+### Packages
+
+```{r packages}
+
+library(seqinr)
+library(tidyverse)
+library(scales)
+library(wesanderson)
+
+```
+
+### Getting the assemblies
+
+To run this code, I first created symbolic links for the genome files in the workdir (the files were stored in another computer folder):
+
+```{r symbolic links}
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCapitalensis_CBS173_77.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCapitalensis_CBS356_52.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCapitalensis_CBS111638.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCapitalensis_CBS117118.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCapitalensis_CBS123374.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCapitalensis_CBS128856.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCapitalensis_LGMF01.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitriasiana_CBS120486.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitriasiana_CBS120426.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitriasiana_CBS123371.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitriasiana_CGMCC314344.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitribraziliensis_CBS100098.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitribraziliensis_LGMF08.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitribraziliensis_CPC17464.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CBS111_20.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CBS102373.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CBS122482.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CBS122670.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CBS127454.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CBS131864.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CBS141352.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CPC16586.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitricarpa_CPC27913.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitrichinaensis_CBS129764.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PCitrichinaensis_CBS130529.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PParacitricarpa_CPC27169.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Phyllosticta/PParacitricarpa_CBS141358.fasta", to=".")
+file.symlink(from="../../Documentos/Genomes/Pseudofusicoccum/Pseudofusicoccum_sp_LGMF1611.fasta", to=".")
+
+```
+
+### Avoiding the use of scientific notation in the plot
+
+Without avoind the use of scientific notation, genome size was a little confusing on the y axis of the plot.
+
+```{r scientific notation}
+options(scipen=5)
+
+```
+
+
+# *Phyllosticta capitalensis*
+
+```{r folder_PCapitalensis}
+dir.create("PCapitalensis")
+
+```
+
+
+## *Phyllosticta capitalensis* CBS 128856
+
+Reading data
+
+```{r data_PCapitalensis_CBS128856}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCapitalensis_CBS128856_fasta <- read.fasta("PCapitalensis_CBS128856.fasta")
+PCapitalensis_CBS128856_lengths <- getLength(PCapitalensis_CBS128856_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCapitalensis_CBS128856_length_sum <- sum(PCapitalensis_CBS128856_lengths)
+PCapitalensis_CBS128856_perc <- PCapitalensis_CBS128856_lengths/PCapitalensis_CBS128856_length_sum
+PCapitalensis_CBS128856_length_cumsum <- cumsum(PCapitalensis_CBS128856_lengths)
+PCapitalensis_CBS128856_perc_cumsum <- cumsum(PCapitalensis_CBS128856_perc)
+
+#Creating a data frame for ggplot
+PCapitalensis_CBS128856_df <- data.frame(PCapitalensis_CBS128856_lengths, PCapitalensis_CBS128856_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCapitalensis_CBS128856}
+# Adjusting colour palette according to number of contigs
+PCapitalensis_CBS128856_colours <- c(wes_palette("Zissou1", length(PCapitalensis_CBS128856_lengths), type="continuous"))
+
+PCapitalensis_CBS128856_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. capitalensis CBS 128856 \n")
+
+PCapitalensis_CBS128856_length_plot <- 
+  ggplot(PCapitalensis_CBS128856_df,    
+         aes(x=1:length(PCapitalensis_CBS128856_length_cumsum), 
+             y=PCapitalensis_CBS128856_length_cumsum)) +
+  geom_point(aes(size=PCapitalensis_CBS128856_lengths, color = PCapitalensis_CBS128856_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCapitalensis_CBS128856_df$PCapitalensis_CBS128856_lengths), labels = comma(fivenum(PCapitalensis_CBS128856_df$PCapitalensis_CBS128856_lengths))) +
+  geom_vline(xintercept=14, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCapitalensis_CBS128856_colours), high = tail(PCapitalensis_CBS128856_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCapitalensis_CBS128856_df$PCapitalensis_CBS128856_lengths), labels = comma(fivenum(PCapitalensis_CBS128856_df$PCapitalensis_CBS128856_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCapitalensis_CBS128856_final_plot <- 
+  PCapitalensis_CBS128856_length_plot +
+  ggtitle(PCapitalensis_CBS128856_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCapitalensis/PCapitalensis_CBS128856.png")
+  PCapitalensis_CBS128856_final_plot
+dev.off()
+
+pdf("./PCapitalensis/PCapitalensis_CBS128856.pdf")
+  PCapitalensis_CBS128856_final_plot
+dev.off()
+
+svg("./PCapitalensis/PCapitalensis_CBS128856.svg")
+  PCapitalensis_CBS128856_final_plot
+dev.off()
+
+PCapitalensis_CBS128856_final_plot
+
+```
+
+## *Phyllosticta capitalensis* CBS 173.77
+
+Reading data
+
+```{r data_PCapitalensis_CBS173_77}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCapitalensis_CBS173_77_fasta <- read.fasta("PCapitalensis_CBS173_77.fasta")
+PCapitalensis_CBS173_77_lengths <- getLength(PCapitalensis_CBS173_77_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCapitalensis_CBS173_77_length_sum <- sum(PCapitalensis_CBS173_77_lengths)
+PCapitalensis_CBS173_77_perc <- PCapitalensis_CBS173_77_lengths/PCapitalensis_CBS173_77_length_sum
+PCapitalensis_CBS173_77_length_cumsum <- cumsum(PCapitalensis_CBS173_77_lengths)
+PCapitalensis_CBS173_77_perc_cumsum <- cumsum(PCapitalensis_CBS173_77_perc)
+
+#Creating a data frame for ggplot
+PCapitalensis_CBS173_77_df <- data.frame(PCapitalensis_CBS173_77_lengths, PCapitalensis_CBS173_77_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCapitalensis_CBS173_77}
+# Adjusting colour palette according to number of contigs
+PCapitalensis_CBS173_77_colours <- c(wes_palette("Zissou1", length(PCapitalensis_CBS173_77_lengths), type="continuous"))
+
+PCapitalensis_CBS173_77_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. capitalensis CBS 173.77 \n")
+
+PCapitalensis_CBS173_77_length_plot <- 
+  ggplot(PCapitalensis_CBS173_77_df,    
+         aes(x=1:length(PCapitalensis_CBS173_77_length_cumsum), 
+             y=PCapitalensis_CBS173_77_length_cumsum)) +
+  geom_point(aes(size=PCapitalensis_CBS173_77_lengths, color = PCapitalensis_CBS173_77_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCapitalensis_CBS173_77_df$PCapitalensis_CBS173_77_lengths), labels = comma(fivenum(PCapitalensis_CBS173_77_df$PCapitalensis_CBS173_77_lengths))) +
+  geom_vline(xintercept=15, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCapitalensis_CBS173_77_colours), high = tail(PCapitalensis_CBS173_77_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCapitalensis_CBS173_77_df$PCapitalensis_CBS173_77_lengths), labels = comma(fivenum(PCapitalensis_CBS173_77_df$PCapitalensis_CBS173_77_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCapitalensis_CBS173_77_final_plot <- 
+  PCapitalensis_CBS173_77_length_plot +
+  ggtitle(PCapitalensis_CBS173_77_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCapitalensis/PCapitalensis_CBS173_77.png")
+  PCapitalensis_CBS173_77_final_plot
+dev.off()
+
+pdf("./PCapitalensis/PCapitalensis_CBS173_77.pdf")
+  PCapitalensis_CBS173_77_final_plot
+dev.off()
+
+svg("./PCapitalensis/PCapitalensis_CBS173_77.svg")
+  PCapitalensis_CBS173_77_final_plot
+dev.off()
+
+PCapitalensis_CBS173_77_final_plot
+
+```
+
+## *Phyllosticta capitalensis* CBS 356.52
+
+Reading data
+
+```{r data_PCapitalensis_CBS356_52}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCapitalensis_CBS356_52_fasta <- read.fasta("PCapitalensis_CBS356_52.fasta")
+PCapitalensis_CBS356_52_lengths <- getLength(PCapitalensis_CBS356_52_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCapitalensis_CBS356_52_length_sum <- sum(PCapitalensis_CBS356_52_lengths)
+PCapitalensis_CBS356_52_perc <- PCapitalensis_CBS356_52_lengths/PCapitalensis_CBS356_52_length_sum
+PCapitalensis_CBS356_52_length_cumsum <- cumsum(PCapitalensis_CBS356_52_lengths)
+PCapitalensis_CBS356_52_perc_cumsum <- cumsum(PCapitalensis_CBS356_52_perc)
+
+#Creating a data frame for ggplot
+PCapitalensis_CBS356_52_df <- data.frame(PCapitalensis_CBS356_52_lengths, PCapitalensis_CBS356_52_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCapitalensis_CBS356_52}
+# Adjusting colour palette according to number of contigs
+PCapitalensis_CBS356_52_colours <- c(wes_palette("Zissou1", length(PCapitalensis_CBS356_52_lengths), type="continuous"))
+
+PCapitalensis_CBS356_52_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. capitalensis CBS 356.52 \n")
+
+PCapitalensis_CBS356_52_length_plot <- 
+  ggplot(PCapitalensis_CBS356_52_df,    
+         aes(x=1:length(PCapitalensis_CBS356_52_length_cumsum), 
+             y=PCapitalensis_CBS356_52_length_cumsum)) +
+  geom_point(aes(size=PCapitalensis_CBS356_52_lengths, color = PCapitalensis_CBS356_52_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCapitalensis_CBS356_52_df$PCapitalensis_CBS356_52_lengths), labels = comma(fivenum(PCapitalensis_CBS356_52_df$PCapitalensis_CBS356_52_lengths))) +
+  geom_vline(xintercept=16, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCapitalensis_CBS356_52_colours), high = tail(PCapitalensis_CBS356_52_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCapitalensis_CBS356_52_df$PCapitalensis_CBS356_52_lengths), labels = comma(fivenum(PCapitalensis_CBS356_52_df$PCapitalensis_CBS356_52_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCapitalensis_CBS356_52_final_plot <- 
+  PCapitalensis_CBS356_52_length_plot +
+  ggtitle(PCapitalensis_CBS356_52_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCapitalensis/PCapitalensis_CBS356_52.png")
+  PCapitalensis_CBS356_52_final_plot
+dev.off()
+
+pdf("./PCapitalensis/PCapitalensis_CBS356_52.pdf")
+  PCapitalensis_CBS356_52_final_plot
+dev.off()
+
+svg("./PCapitalensis/PCapitalensis_CBS356_52.svg")
+  PCapitalensis_CBS356_52_final_plot
+dev.off()
+
+PCapitalensis_CBS356_52_final_plot
+
+```
+
+## *Phyllosticta capitalensis* CBS 111638
+
+Reading data
+
+```{r data_PCapitalensis_CBS111638}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCapitalensis_CBS111638_fasta <- read.fasta("PCapitalensis_CBS111638.fasta")
+PCapitalensis_CBS111638_lengths <- getLength(PCapitalensis_CBS111638_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCapitalensis_CBS111638_length_sum <- sum(PCapitalensis_CBS111638_lengths)
+PCapitalensis_CBS111638_perc <- PCapitalensis_CBS111638_lengths/PCapitalensis_CBS111638_length_sum
+PCapitalensis_CBS111638_length_cumsum <- cumsum(PCapitalensis_CBS111638_lengths)
+PCapitalensis_CBS111638_perc_cumsum <- cumsum(PCapitalensis_CBS111638_perc)
+
+#Creating a data frame for ggplot
+PCapitalensis_CBS111638_df <- data.frame(PCapitalensis_CBS111638_lengths, PCapitalensis_CBS111638_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCapitalensis_CBS111638}
+# Adjusting colour palette according to number of contigs
+PCapitalensis_CBS111638_colours <- c(wes_palette("Zissou1", length(PCapitalensis_CBS111638_lengths), type="continuous"))
+
+PCapitalensis_CBS111638_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. capitalensis CBS 111638 \n")
+
+PCapitalensis_CBS111638_length_plot <- 
+  ggplot(PCapitalensis_CBS111638_df,    
+         aes(x=1:length(PCapitalensis_CBS111638_length_cumsum), 
+             y=PCapitalensis_CBS111638_length_cumsum)) +
+  geom_point(aes(size=PCapitalensis_CBS111638_lengths, color = PCapitalensis_CBS111638_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCapitalensis_CBS111638_df$PCapitalensis_CBS111638_lengths), labels = comma(fivenum(PCapitalensis_CBS111638_df$PCapitalensis_CBS111638_lengths))) +
+  geom_vline(xintercept=16, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCapitalensis_CBS111638_colours), high = tail(PCapitalensis_CBS111638_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCapitalensis_CBS111638_df$PCapitalensis_CBS111638_lengths), labels = comma(fivenum(PCapitalensis_CBS111638_df$PCapitalensis_CBS111638_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCapitalensis_CBS111638_final_plot <- 
+  PCapitalensis_CBS111638_length_plot +
+  ggtitle(PCapitalensis_CBS111638_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCapitalensis/PCapitalensis_CBS111638.png")
+  PCapitalensis_CBS111638_final_plot
+dev.off()
+
+pdf("./PCapitalensis/PCapitalensis_CBS111638.pdf")
+  PCapitalensis_CBS111638_final_plot
+dev.off()
+
+svg("./PCapitalensis/PCapitalensis_CBS111638.svg")
+  PCapitalensis_CBS111638_final_plot
+dev.off()
+
+PCapitalensis_CBS111638_final_plot
+
+```
+
+## *Phyllosticta capitalensis* CBS 117118
+
+Reading data
+
+```{r data_PCapitalensis_CBS117118}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCapitalensis_CBS117118_fasta <- read.fasta("PCapitalensis_CBS117118.fasta")
+PCapitalensis_CBS117118_lengths <- getLength(PCapitalensis_CBS117118_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCapitalensis_CBS117118_length_sum <- sum(PCapitalensis_CBS117118_lengths)
+PCapitalensis_CBS117118_perc <- PCapitalensis_CBS117118_lengths/PCapitalensis_CBS117118_length_sum
+PCapitalensis_CBS117118_length_cumsum <- cumsum(PCapitalensis_CBS117118_lengths)
+PCapitalensis_CBS117118_perc_cumsum <- cumsum(PCapitalensis_CBS117118_perc)
+
+#Creating a data frame for ggplot
+PCapitalensis_CBS117118_df <- data.frame(PCapitalensis_CBS117118_lengths, PCapitalensis_CBS117118_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCapitalensis_CBS117118}
+# Adjusting colour palette according to number of contigs
+PCapitalensis_CBS117118_colours <- c(wes_palette("Zissou1", length(PCapitalensis_CBS117118_lengths), type="continuous"))
+
+PCapitalensis_CBS117118_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. capitalensis CBS 117118 \n")
+
+PCapitalensis_CBS117118_length_plot <- 
+  ggplot(PCapitalensis_CBS117118_df,    
+         aes(x=1:length(PCapitalensis_CBS117118_length_cumsum), 
+             y=PCapitalensis_CBS117118_length_cumsum)) +
+  geom_point(aes(size=PCapitalensis_CBS117118_lengths, color = PCapitalensis_CBS117118_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCapitalensis_CBS117118_df$PCapitalensis_CBS117118_lengths), labels = comma(fivenum(PCapitalensis_CBS117118_df$PCapitalensis_CBS117118_lengths))) +
+  geom_vline(xintercept=16, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCapitalensis_CBS117118_colours), high = tail(PCapitalensis_CBS117118_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCapitalensis_CBS117118_df$PCapitalensis_CBS117118_lengths), labels = comma(fivenum(PCapitalensis_CBS117118_df$PCapitalensis_CBS117118_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCapitalensis_CBS117118_final_plot <- 
+  PCapitalensis_CBS117118_length_plot +
+  ggtitle(PCapitalensis_CBS117118_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCapitalensis/PCapitalensis_CBS117118.png")
+  PCapitalensis_CBS117118_final_plot
+dev.off()
+
+pdf("./PCapitalensis/PCapitalensis_CBS117118.pdf")
+  PCapitalensis_CBS117118_final_plot
+dev.off()
+
+svg("./PCapitalensis/PCapitalensis_CBS117118.svg")
+  PCapitalensis_CBS117118_final_plot
+dev.off()
+
+PCapitalensis_CBS117118_final_plot
+
+```
+
+## *Phyllosticta capitalensis* CBS 123374
+
+Reading data
+
+```{r data_PCapitalensis_CBS123374}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCapitalensis_CBS123374_fasta <- read.fasta("PCapitalensis_CBS123374.fasta")
+PCapitalensis_CBS123374_lengths <- getLength(PCapitalensis_CBS123374_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCapitalensis_CBS123374_length_sum <- sum(PCapitalensis_CBS123374_lengths)
+PCapitalensis_CBS123374_perc <- PCapitalensis_CBS123374_lengths/PCapitalensis_CBS123374_length_sum
+PCapitalensis_CBS123374_length_cumsum <- cumsum(PCapitalensis_CBS123374_lengths)
+PCapitalensis_CBS123374_perc_cumsum <- cumsum(PCapitalensis_CBS123374_perc)
+
+#Creating a data frame for ggplot
+PCapitalensis_CBS123374_df <- data.frame(PCapitalensis_CBS123374_lengths, PCapitalensis_CBS123374_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCapitalensis_CBS123374}
+# Adjusting colour palette according to number of contigs
+PCapitalensis_CBS123374_colours <- c(wes_palette("Zissou1", length(PCapitalensis_CBS123374_lengths), type="continuous"))
+
+PCapitalensis_CBS123374_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. capitalensis CBS 123374 \n")
+
+PCapitalensis_CBS123374_length_plot <- 
+  ggplot(PCapitalensis_CBS123374_df,    
+         aes(x=1:length(PCapitalensis_CBS123374_length_cumsum), 
+             y=PCapitalensis_CBS123374_length_cumsum)) +
+  geom_point(aes(size=PCapitalensis_CBS123374_lengths, color = PCapitalensis_CBS123374_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCapitalensis_CBS123374_df$PCapitalensis_CBS123374_lengths), labels = comma(fivenum(PCapitalensis_CBS123374_df$PCapitalensis_CBS123374_lengths))) +
+  geom_vline(xintercept=15, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCapitalensis_CBS123374_colours), high = tail(PCapitalensis_CBS123374_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCapitalensis_CBS123374_df$PCapitalensis_CBS123374_lengths), labels = comma(fivenum(PCapitalensis_CBS123374_df$PCapitalensis_CBS123374_lengths))) +   geom_line(color="#046C9A")
+  
+## Final plot
+
+PCapitalensis_CBS123374_final_plot <- 
+  PCapitalensis_CBS123374_length_plot +
+  ggtitle(PCapitalensis_CBS123374_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCapitalensis/PCapitalensis_CBS123374.png")
+  PCapitalensis_CBS123374_final_plot
+dev.off()
+
+pdf("./PCapitalensis/PCapitalensis_CBS123374.pdf")
+  PCapitalensis_CBS123374_final_plot
+dev.off()
+
+svg("./PCapitalensis/PCapitalensis_CBS123374.svg")
+  PCapitalensis_CBS123374_final_plot
+dev.off()
+
+PCapitalensis_CBS123374_final_plot
+
+```
+
+## *Phyllosticta capitalensis* LGMF01
+
+Reading data
+
+```{r data_PCapitalensis_LGMF01}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCapitalensis_LGMF01_fasta <- read.fasta("PCapitalensis_LGMF01.fasta")
+PCapitalensis_LGMF01_lengths <- sort(getLength(PCapitalensis_LGMF01_fasta), decreasing=TRUE)
+
+#Length sum, percentage of total length, cumulative sum
+PCapitalensis_LGMF01_length_sum <- sum(PCapitalensis_LGMF01_lengths)
+PCapitalensis_LGMF01_perc <- PCapitalensis_LGMF01_lengths/PCapitalensis_LGMF01_length_sum
+PCapitalensis_LGMF01_length_cumsum <- cumsum(PCapitalensis_LGMF01_lengths)
+PCapitalensis_LGMF01_perc_cumsum <- cumsum(PCapitalensis_LGMF01_perc)
+
+#Creating a data frame for ggplot
+PCapitalensis_LGMF01_df <- data.frame(PCapitalensis_LGMF01_lengths, PCapitalensis_LGMF01_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCapitalensis_LGMF01}
+# Adjusting colour palette according to number of contigs
+PCapitalensis_LGMF01_colours <- c(wes_palette("Zissou1", length(PCapitalensis_LGMF01_lengths)/10, type="continuous"))
+
+PCapitalensis_LGMF01_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. capitalensis LGMF 01 \n")
+
+PCapitalensis_LGMF01_length_plot <- 
+  ggplot(PCapitalensis_LGMF01_df,    
+         aes(x=1:length(PCapitalensis_LGMF01_length_cumsum), 
+             y=PCapitalensis_LGMF01_length_cumsum)) +
+  geom_point(aes(size=PCapitalensis_LGMF01_lengths, color = PCapitalensis_LGMF01_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCapitalensis_LGMF01_df$PCapitalensis_LGMF01_lengths), labels = comma(fivenum(PCapitalensis_LGMF01_df$PCapitalensis_LGMF01_lengths))) +
+  geom_vline(xintercept=33, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCapitalensis_LGMF01_colours), high = tail(PCapitalensis_LGMF01_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCapitalensis_LGMF01_df$PCapitalensis_LGMF01_lengths), labels = comma(fivenum(PCapitalensis_LGMF01_df$PCapitalensis_LGMF01_lengths))) +
+  geom_line(color="#046C9A")
+  
+## Final plot
+
+PCapitalensis_LGMF01_final_plot <- 
+  PCapitalensis_LGMF01_length_plot +
+  ggtitle(PCapitalensis_LGMF01_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCapitalensis/PCapitalensis_LGMF01.png")
+  PCapitalensis_LGMF01_final_plot
+dev.off()
+
+pdf("./PCapitalensis/PCapitalensis_LGMF01.pdf")
+  PCapitalensis_LGMF01_final_plot
+dev.off()
+
+svg("./PCapitalensis/PCapitalensis_LGMF01.svg")
+  PCapitalensis_LGMF01_final_plot
+dev.off()
+
+PCapitalensis_LGMF01_final_plot
+
+```
+
+# *Phyllosticta citriasiana*
+
+```{r folder_PCitriasiana}
+dir.create("PCitriasiana")
+```
+
+## *Phyllosticta citriasiana* CBS 120486
+
+Reading data
+
+```{r data_PCitriasiana_CBS120486}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitriasiana_CBS120486_fasta <- read.fasta("PCitriasiana_CBS120486.fasta")
+PCitriasiana_CBS120486_lengths <- sort(getLength(PCitriasiana_CBS120486_fasta), decreasing=TRUE)
+
+#Length sum, percentage of total length, cumulative sum
+PCitriasiana_CBS120486_length_sum <- sum(PCitriasiana_CBS120486_lengths)
+PCitriasiana_CBS120486_perc <- PCitriasiana_CBS120486_lengths/PCitriasiana_CBS120486_length_sum
+PCitriasiana_CBS120486_length_cumsum <- cumsum(PCitriasiana_CBS120486_lengths)
+PCitriasiana_CBS120486_perc_cumsum <- cumsum(PCitriasiana_CBS120486_perc)
+
+#Creating a data frame for ggplot
+PCitriasiana_CBS120486_df <- data.frame(PCitriasiana_CBS120486_lengths, PCitriasiana_CBS120486_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitriasiana_CBS120486}
+# Adjusting colour palette according to number of contigs
+PCitriasiana_CBS120486_colours <- c(wes_palette("Zissou1", length(PCitriasiana_CBS120486_lengths)/10, type="continuous"))
+
+PCitriasiana_CBS120486_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citriasiana CBS 120486 \n")
+
+PCitriasiana_CBS120486_length_plot <- 
+  ggplot(PCitriasiana_CBS120486_df,    
+         aes(x=1:length(PCitriasiana_CBS120486_length_cumsum), 
+             y=PCitriasiana_CBS120486_length_cumsum)) +
+  geom_point(aes(size=PCitriasiana_CBS120486_lengths, color = PCitriasiana_CBS120486_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitriasiana_CBS120486_df$PCitriasiana_CBS120486_lengths), labels = comma(fivenum(PCitriasiana_CBS120486_df$PCitriasiana_CBS120486_lengths))) +
+  geom_vline(xintercept=40, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitriasiana_CBS120486_colours), high = tail(PCitriasiana_CBS120486_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitriasiana_CBS120486_df$PCitriasiana_CBS120486_lengths), labels = comma(fivenum(PCitriasiana_CBS120486_df$PCitriasiana_CBS120486_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitriasiana_CBS120486_final_plot <- 
+  PCitriasiana_CBS120486_length_plot +
+  ggtitle(PCitriasiana_CBS120486_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitriasiana/PCitriasiana_CBS120486.png")
+  PCitriasiana_CBS120486_final_plot
+dev.off()
+
+pdf("./PCitriasiana/PCitriasiana_CBS120486.pdf")
+  PCitriasiana_CBS120486_final_plot
+dev.off()
+
+svg("./PCitriasiana/PCitriasiana_CBS120486.svg")
+  PCitriasiana_CBS120486_final_plot
+dev.off()
+
+PCitriasiana_CBS120486_final_plot
+
+```
+
+## *Phyllosticta citriasiana* CBS 120426
+
+Reading data
+
+```{r data_PCitriasiana_CBS120426}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitriasiana_CBS120426_fasta <- read.fasta("PCitriasiana_CBS120426.fasta")
+PCitriasiana_CBS120426_lengths <- sort(getLength(PCitriasiana_CBS120426_fasta), decreasing=TRUE)
+
+#Length sum, percentage of total length, cumulative sum
+PCitriasiana_CBS120426_length_sum <- sum(PCitriasiana_CBS120426_lengths)
+PCitriasiana_CBS120426_perc <- PCitriasiana_CBS120426_lengths/PCitriasiana_CBS120426_length_sum
+PCitriasiana_CBS120426_length_cumsum <- cumsum(PCitriasiana_CBS120426_lengths)
+PCitriasiana_CBS120426_perc_cumsum <- cumsum(PCitriasiana_CBS120426_perc)
+
+#Creating a data frame for ggplot
+PCitriasiana_CBS120426_df <- data.frame(PCitriasiana_CBS120426_lengths, PCitriasiana_CBS120426_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitriasiana_CBS120426}
+# Adjusting colour palette according to number of contigs
+PCitriasiana_CBS120426_colours <- c(wes_palette("Zissou1", length(PCitriasiana_CBS120426_lengths)/10, type="continuous"))
+
+PCitriasiana_CBS120426_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citriasiana CBS 120426 \n")
+
+PCitriasiana_CBS120426_length_plot <- 
+  ggplot(PCitriasiana_CBS120426_df,    
+         aes(x=1:length(PCitriasiana_CBS120426_length_cumsum), 
+             y=PCitriasiana_CBS120426_length_cumsum)) +
+  geom_point(aes(size=PCitriasiana_CBS120426_lengths, color = PCitriasiana_CBS120426_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitriasiana_CBS120426_df$PCitriasiana_CBS120426_lengths), labels = comma(fivenum(PCitriasiana_CBS120426_df$PCitriasiana_CBS120426_lengths))) +
+  geom_vline(xintercept=30, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitriasiana_CBS120426_colours), high = tail(PCitriasiana_CBS120426_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitriasiana_CBS120426_df$PCitriasiana_CBS120426_lengths), labels = comma(fivenum(PCitriasiana_CBS120426_df$PCitriasiana_CBS120426_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitriasiana_CBS120426_final_plot <- 
+  PCitriasiana_CBS120426_length_plot +
+  ggtitle(PCitriasiana_CBS120426_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitriasiana/PCitriasiana_CBS120426.png")
+  PCitriasiana_CBS120426_final_plot
+dev.off()
+
+pdf("./PCitriasiana/PCitriasiana_CBS120426.pdf")
+  PCitriasiana_CBS120426_final_plot
+dev.off()
+
+svg("./PCitriasiana/PCitriasiana_CBS120426.svg")
+  PCitriasiana_CBS120426_final_plot
+dev.off()
+
+PCitriasiana_CBS120426_final_plot
+
+```
+
+## *Phyllosticta citriasiana* CBS 123371
+
+Reading data
+
+```{r data_PCitriasiana_CBS123371}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitriasiana_CBS123371_fasta <- read.fasta("PCitriasiana_CBS123371.fasta")
+PCitriasiana_CBS123371_lengths <- sort(getLength(PCitriasiana_CBS123371_fasta), decreasing=TRUE)
+
+#Length sum, percentage of total length, cumulative sum
+PCitriasiana_CBS123371_length_sum <- sum(PCitriasiana_CBS123371_lengths)
+PCitriasiana_CBS123371_perc <- PCitriasiana_CBS123371_lengths/PCitriasiana_CBS123371_length_sum
+PCitriasiana_CBS123371_length_cumsum <- cumsum(PCitriasiana_CBS123371_lengths)
+PCitriasiana_CBS123371_perc_cumsum <- cumsum(PCitriasiana_CBS123371_perc)
+
+#Creating a data frame for ggplot
+PCitriasiana_CBS123371_df <- data.frame(PCitriasiana_CBS123371_lengths, PCitriasiana_CBS123371_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitriasiana_CBS123371}
+# Adjusting colour palette according to number of contigs
+PCitriasiana_CBS123371_colours <- c(wes_palette("Zissou1", length(PCitriasiana_CBS123371_lengths)/10, type="continuous"))
+
+PCitriasiana_CBS123371_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citriasiana CBS 123371 \n")
+
+PCitriasiana_CBS123371_length_plot <- 
+  ggplot(PCitriasiana_CBS123371_df,    
+         aes(x=1:length(PCitriasiana_CBS123371_length_cumsum), 
+             y=PCitriasiana_CBS123371_length_cumsum)) +
+  geom_point(aes(size=PCitriasiana_CBS123371_lengths, color = PCitriasiana_CBS123371_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitriasiana_CBS123371_df$PCitriasiana_CBS123371_lengths), labels = comma(fivenum(PCitriasiana_CBS123371_df$PCitriasiana_CBS123371_lengths))) +
+  geom_vline(xintercept=26, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitriasiana_CBS123371_colours), high = tail(PCitriasiana_CBS123371_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitriasiana_CBS123371_df$PCitriasiana_CBS123371_lengths), labels = comma(fivenum(PCitriasiana_CBS123371_df$PCitriasiana_CBS123371_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitriasiana_CBS123371_final_plot <- 
+  PCitriasiana_CBS123371_length_plot +
+  ggtitle(PCitriasiana_CBS123371_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitriasiana/PCitriasiana_CBS123371.png")
+  PCitriasiana_CBS123371_final_plot
+dev.off()
+
+pdf("./PCitriasiana/PCitriasiana_CBS123371.pdf")
+  PCitriasiana_CBS123371_final_plot
+dev.off()
+
+svg("./PCitriasiana/PCitriasiana_CBS123371.svg")
+  PCitriasiana_CBS123371_final_plot
+dev.off()
+
+PCitriasiana_CBS123371_final_plot
+
+```
+
+## *Phyllosticta citriasiana* CGMCC 3.14344
+
+Reading data
+
+```{r data_PCitriasiana_CGMCC314344}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitriasiana_CGMCC314344_fasta <- read.fasta("PCitriasiana_CGMCC314344.fasta")
+PCitriasiana_CGMCC314344_lengths <- sort(getLength(PCitriasiana_CGMCC314344_fasta), decreasing=TRUE)
+
+#Length sum, percentage of total length, cumulative sum
+PCitriasiana_CGMCC314344_length_sum <- sum(PCitriasiana_CGMCC314344_lengths)
+PCitriasiana_CGMCC314344_perc <- PCitriasiana_CGMCC314344_lengths/PCitriasiana_CGMCC314344_length_sum
+PCitriasiana_CGMCC314344_length_cumsum <- cumsum(PCitriasiana_CGMCC314344_lengths)
+PCitriasiana_CGMCC314344_perc_cumsum <- cumsum(PCitriasiana_CGMCC314344_perc)
+
+#Creating a data frame for ggplot
+PCitriasiana_CGMCC314344_df <- data.frame(PCitriasiana_CGMCC314344_lengths, PCitriasiana_CGMCC314344_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitriasiana_CGMCC314344}
+# Adjusting colour palette according to number of contigs
+PCitriasiana_CGMCC314344_colours <- c(wes_palette("Zissou1", length(PCitriasiana_CGMCC314344_lengths)/10, type="continuous"))
+
+PCitriasiana_CGMCC314344_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citriasiana CGMCC 3.14344 \n")
+
+PCitriasiana_CGMCC314344_length_plot <- 
+  ggplot(PCitriasiana_CGMCC314344_df,    
+         aes(x=1:length(PCitriasiana_CGMCC314344_length_cumsum), 
+             y=PCitriasiana_CGMCC314344_length_cumsum)) +
+  geom_point(aes(size=PCitriasiana_CGMCC314344_lengths, color = PCitriasiana_CGMCC314344_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitriasiana_CGMCC314344_df$PCitriasiana_CGMCC314344_lengths), labels = comma(fivenum(PCitriasiana_CGMCC314344_df$PCitriasiana_CGMCC314344_lengths))) +
+  geom_vline(xintercept=47, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitriasiana_CGMCC314344_colours), high = tail(PCitriasiana_CGMCC314344_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitriasiana_CGMCC314344_df$PCitriasiana_CGMCC314344_lengths), labels = comma(fivenum(PCitriasiana_CGMCC314344_df$PCitriasiana_CGMCC314344_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitriasiana_CGMCC314344_final_plot <- 
+  PCitriasiana_CGMCC314344_length_plot +
+  ggtitle(PCitriasiana_CGMCC314344_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitriasiana/PCitriasiana_CGMCC314344.png")
+  PCitriasiana_CGMCC314344_final_plot
+dev.off()
+
+pdf("./PCitriasiana/PCitriasiana_CGMCC314344.pdf")
+  PCitriasiana_CGMCC314344_final_plot
+dev.off()
+
+svg("./PCitriasiana/PCitriasiana_CGMCC314344.svg")
+  PCitriasiana_CGMCC314344_final_plot
+dev.off()
+
+PCitriasiana_CGMCC314344_final_plot
+
+```
+
+# *Phyllosticta citribraziliensis*
+
+```{r folder_PCitribraziliensis}
+dir.create("PCitribraziliensis")
+```
+
+## *Phyllosticta citribraziliensis* CBS 100098
+
+Reading data
+
+```{r data_PCitribraziliensis_CBS100098}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitribraziliensis_CBS100098_fasta <- read.fasta("PCitribraziliensis_CBS100098.fasta")
+PCitribraziliensis_CBS100098_lengths <- getLength(PCitribraziliensis_CBS100098_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitribraziliensis_CBS100098_length_sum <- sum(PCitribraziliensis_CBS100098_lengths)
+PCitribraziliensis_CBS100098_perc <- PCitribraziliensis_CBS100098_lengths/PCitribraziliensis_CBS100098_length_sum
+PCitribraziliensis_CBS100098_length_cumsum <- cumsum(PCitribraziliensis_CBS100098_lengths)
+PCitribraziliensis_CBS100098_perc_cumsum <- cumsum(PCitribraziliensis_CBS100098_perc)
+
+#Creating a data frame for ggplot
+PCitribraziliensis_CBS100098_df <- data.frame(PCitribraziliensis_CBS100098_lengths, PCitribraziliensis_CBS100098_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r folder_PCitribraziliensis_CBS100098}
+# Adjusting colour palette according to number of contigs
+PCitribraziliensis_CBS100098_colours <- c(wes_palette("Zissou1", length(PCitribraziliensis_CBS100098_lengths), type="continuous"))
+
+PCitribraziliensis_CBS100098_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citribraziliensis CBS 100098 \n")
+
+PCitribraziliensis_CBS100098_length_plot <- 
+  ggplot(PCitribraziliensis_CBS100098_df,    
+         aes(x=1:length(PCitribraziliensis_CBS100098_length_cumsum), 
+             y=PCitribraziliensis_CBS100098_length_cumsum)) +
+  geom_point(aes(size=PCitribraziliensis_CBS100098_lengths, color = PCitribraziliensis_CBS100098_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitribraziliensis_CBS100098_df$PCitribraziliensis_CBS100098_lengths), labels = comma(fivenum(PCitribraziliensis_CBS100098_df$PCitribraziliensis_CBS100098_lengths))) +
+  geom_vline(xintercept=25, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitribraziliensis_CBS100098_colours), high = tail(PCitribraziliensis_CBS100098_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitribraziliensis_CBS100098_df$PCitribraziliensis_CBS100098_lengths), labels = comma(fivenum(PCitribraziliensis_CBS100098_df$PCitribraziliensis_CBS100098_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitribraziliensis_CBS100098_final_plot <- 
+  PCitribraziliensis_CBS100098_length_plot +
+  ggtitle(PCitribraziliensis_CBS100098_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitribraziliensis/PCitribraziliensis_CBS100098.png")
+  PCitribraziliensis_CBS100098_final_plot
+dev.off()
+
+pdf("./PCitribraziliensis/PCitribraziliensis_CBS100098.pdf")
+  PCitribraziliensis_CBS100098_final_plot
+dev.off()
+
+svg("./PCitribraziliensis/PCitribraziliensis_CBS100098.svg")
+  PCitribraziliensis_CBS100098_final_plot
+dev.off()
+
+PCitribraziliensis_CBS100098_final_plot
+
+```
+
+## *Phyllosticta citribraziliensis* LGMF 08
+
+Reading data
+
+```{r data_PCitribraziliensis_LGMF08}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitribraziliensis_LGMF08_fasta <- read.fasta("PCitribraziliensis_LGMF08.fasta")
+PCitribraziliensis_LGMF08_lengths <- getLength(PCitribraziliensis_LGMF08_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitribraziliensis_LGMF08_length_sum <- sum(PCitribraziliensis_LGMF08_lengths)
+PCitribraziliensis_LGMF08_perc <- PCitribraziliensis_LGMF08_lengths/PCitribraziliensis_LGMF08_length_sum
+PCitribraziliensis_LGMF08_length_cumsum <- cumsum(PCitribraziliensis_LGMF08_lengths)
+PCitribraziliensis_LGMF08_perc_cumsum <- cumsum(PCitribraziliensis_LGMF08_perc)
+
+#Creating a data frame for ggplot
+PCitribraziliensis_LGMF08_df <- data.frame(PCitribraziliensis_LGMF08_lengths, PCitribraziliensis_LGMF08_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitribraziliensis_LGMF08}
+# Adjusting colour palette according to number of contigs
+PCitribraziliensis_LGMF08_colours <- c(wes_palette("Zissou1", length(PCitribraziliensis_LGMF08_lengths), type="continuous"))
+
+PCitribraziliensis_LGMF08_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citribraziliensis LGMF 08 \n")
+
+PCitribraziliensis_LGMF08_length_plot <- 
+  ggplot(PCitribraziliensis_LGMF08_df,    
+         aes(x=1:length(PCitribraziliensis_LGMF08_length_cumsum), 
+             y=PCitribraziliensis_LGMF08_length_cumsum)) +
+  geom_point(aes(size=PCitribraziliensis_LGMF08_lengths, color = PCitribraziliensis_LGMF08_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitribraziliensis_LGMF08_df$PCitribraziliensis_LGMF08_lengths), labels = comma(fivenum(PCitribraziliensis_LGMF08_df$PCitribraziliensis_LGMF08_lengths))) +
+  geom_vline(xintercept=75, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitribraziliensis_LGMF08_colours), high = tail(PCitribraziliensis_LGMF08_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitribraziliensis_LGMF08_df$PCitribraziliensis_LGMF08_lengths), labels = comma(fivenum(PCitribraziliensis_LGMF08_df$PCitribraziliensis_LGMF08_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitribraziliensis_LGMF08_final_plot <- 
+  PCitribraziliensis_LGMF08_length_plot +
+  ggtitle(PCitribraziliensis_LGMF08_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitribraziliensis/PCitribraziliensis_LGMF08.png")
+  PCitribraziliensis_LGMF08_final_plot
+dev.off()
+
+pdf("./PCitribraziliensis/PCitribraziliensis_LGMF08.pdf")
+  PCitribraziliensis_LGMF08_final_plot
+dev.off()
+
+svg("./PCitribraziliensis/PCitribraziliensis_LGMF08.svg")
+  PCitribraziliensis_LGMF08_final_plot
+dev.off()
+
+PCitribraziliensis_LGMF08_final_plot
+
+```
+
+## *Phyllosticta citribraziliensis* CPC 17464
+
+Reading data
+
+```{r data_PCitribraziliensis_CPC17464}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitribraziliensis_CPC17464_fasta <- read.fasta("PCitribraziliensis_CPC17464.fasta")
+PCitribraziliensis_CPC17464_lengths <- getLength(PCitribraziliensis_CPC17464_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitribraziliensis_CPC17464_length_sum <- sum(PCitribraziliensis_CPC17464_lengths)
+PCitribraziliensis_CPC17464_perc <- PCitribraziliensis_CPC17464_lengths/PCitribraziliensis_CPC17464_length_sum
+PCitribraziliensis_CPC17464_length_cumsum <- cumsum(PCitribraziliensis_CPC17464_lengths)
+PCitribraziliensis_CPC17464_perc_cumsum <- cumsum(PCitribraziliensis_CPC17464_perc)
+
+#Creating a data frame for ggplot
+PCitribraziliensis_CPC17464_df <- data.frame(PCitribraziliensis_CPC17464_lengths, PCitribraziliensis_CPC17464_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitribraziliensis_CPC17464}
+# Adjusting colour palette according to number of contigs
+PCitribraziliensis_CPC17464_colours <- c(wes_palette("Zissou1", length(PCitribraziliensis_CPC17464_lengths), type="continuous"))
+
+PCitribraziliensis_CPC17464_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citribraziliensis CPC 17464 \n")
+
+PCitribraziliensis_CPC17464_length_plot <- 
+  ggplot(PCitribraziliensis_CPC17464_df,    
+         aes(x=1:length(PCitribraziliensis_CPC17464_length_cumsum), 
+             y=PCitribraziliensis_CPC17464_length_cumsum)) +
+  geom_point(aes(size=PCitribraziliensis_CPC17464_lengths, color = PCitribraziliensis_CPC17464_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitribraziliensis_CPC17464_df$PCitribraziliensis_CPC17464_lengths), labels = comma(fivenum(PCitribraziliensis_CPC17464_df$PCitribraziliensis_CPC17464_lengths))) +
+  geom_vline(xintercept=18, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitribraziliensis_CPC17464_colours), high = tail(PCitribraziliensis_CPC17464_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitribraziliensis_CPC17464_df$PCitribraziliensis_CPC17464_lengths), labels = comma(fivenum(PCitribraziliensis_CPC17464_df$PCitribraziliensis_CPC17464_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitribraziliensis_CPC17464_final_plot <- 
+  PCitribraziliensis_CPC17464_length_plot +
+  ggtitle(PCitribraziliensis_CPC17464_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitribraziliensis/PCitribraziliensis_CPC17464.png")
+  PCitribraziliensis_CPC17464_final_plot
+dev.off()
+
+pdf("./PCitribraziliensis/PCitribraziliensis_CPC17464.pdf")
+  PCitribraziliensis_CPC17464_final_plot
+dev.off()
+
+svg("./PCitribraziliensis/PCitribraziliensis_CPC17464.svg")
+  PCitribraziliensis_CPC17464_final_plot
+dev.off()
+
+PCitribraziliensis_CPC17464_final_plot
+
+```
+
+# *Phyllosticta citricarpa* 
+
+```{r folder_PCitricarpa}
+dir.create("PCitricarpa")
+```
+
+## *Phyllosticta citricarpa* CBS 111.20
+
+Reading data
+
+```{r data_PCitricarpa_CBS111_20}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CBS111_20_fasta <- read.fasta("PCitricarpa_CBS111_20.fasta")
+PCitricarpa_CBS111_20_lengths <- getLength(PCitricarpa_CBS111_20_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CBS111_20_length_sum <- sum(PCitricarpa_CBS111_20_lengths)
+PCitricarpa_CBS111_20_perc <- PCitricarpa_CBS111_20_lengths/PCitricarpa_CBS111_20_length_sum
+PCitricarpa_CBS111_20_length_cumsum <- cumsum(PCitricarpa_CBS111_20_lengths)
+PCitricarpa_CBS111_20_perc_cumsum <- cumsum(PCitricarpa_CBS111_20_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CBS111_20_df <- data.frame(PCitricarpa_CBS111_20_lengths, PCitricarpa_CBS111_20_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CBS111_20}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CBS111_20_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CBS111_20_lengths), type="continuous"))
+
+PCitricarpa_CBS111_20_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CBS 111.20 \n")
+
+PCitricarpa_CBS111_20_length_plot <- 
+  ggplot(PCitricarpa_CBS111_20_df,    
+         aes(x=1:length(PCitricarpa_CBS111_20_length_cumsum), 
+             y=PCitricarpa_CBS111_20_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CBS111_20_lengths, color = PCitricarpa_CBS111_20_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CBS111_20_df$PCitricarpa_CBS111_20_lengths), labels = comma(fivenum(PCitricarpa_CBS111_20_df$PCitricarpa_CBS111_20_lengths))) +
+  geom_vline(xintercept=71, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CBS111_20_colours), high = tail(PCitricarpa_CBS111_20_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CBS111_20_df$PCitricarpa_CBS111_20_lengths), labels = comma(fivenum(PCitricarpa_CBS111_20_df$PCitricarpa_CBS111_20_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CBS111_20_final_plot <- 
+  PCitricarpa_CBS111_20_length_plot +
+  ggtitle(PCitricarpa_CBS111_20_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CBS111_20.png")
+  PCitricarpa_CBS111_20_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CBS111_20.pdf")
+  PCitricarpa_CBS111_20_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CBS111_20.svg")
+  PCitricarpa_CBS111_20_final_plot
+dev.off()
+
+PCitricarpa_CBS111_20_final_plot
+
+```
+
+## *Phyllosticta citricarpa* CBS 102373
+
+Reading data
+
+```{r data_PCitricarpa_CBS102373}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CBS102373_fasta <- read.fasta("PCitricarpa_CBS102373.fasta")
+PCitricarpa_CBS102373_lengths <- getLength(PCitricarpa_CBS102373_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CBS102373_length_sum <- sum(PCitricarpa_CBS102373_lengths)
+PCitricarpa_CBS102373_perc <- PCitricarpa_CBS102373_lengths/PCitricarpa_CBS102373_length_sum
+PCitricarpa_CBS102373_length_cumsum <- cumsum(PCitricarpa_CBS102373_lengths)
+PCitricarpa_CBS102373_perc_cumsum <- cumsum(PCitricarpa_CBS102373_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CBS102373_df <- data.frame(PCitricarpa_CBS102373_lengths, PCitricarpa_CBS102373_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CBS102373}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CBS102373_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CBS102373_lengths), type="continuous"))
+
+PCitricarpa_CBS102373_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CBS 102373 \n")
+
+PCitricarpa_CBS102373_length_plot <- 
+  ggplot(PCitricarpa_CBS102373_df,    
+         aes(x=1:length(PCitricarpa_CBS102373_length_cumsum), 
+             y=PCitricarpa_CBS102373_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CBS102373_lengths, color = PCitricarpa_CBS102373_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CBS102373_df$PCitricarpa_CBS102373_lengths), labels = comma(fivenum(PCitricarpa_CBS102373_df$PCitricarpa_CBS102373_lengths))) +
+  geom_vline(xintercept=65, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CBS102373_colours), high = tail(PCitricarpa_CBS102373_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CBS102373_df$PCitricarpa_CBS102373_lengths), labels = comma(fivenum(PCitricarpa_CBS102373_df$PCitricarpa_CBS102373_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CBS102373_final_plot <- 
+  PCitricarpa_CBS102373_length_plot +
+  ggtitle(PCitricarpa_CBS102373_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CBS102373.png")
+  PCitricarpa_CBS102373_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CBS102373.pdf")
+  PCitricarpa_CBS102373_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CBS102373.svg")
+  PCitricarpa_CBS102373_final_plot
+dev.off()
+
+PCitricarpa_CBS102373_final_plot
+
+```
+
+## *Phyllosticta citricarpa* CBS 122482
+
+Reading data
+
+```{r data_PCitricarpa_CBS122482}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CBS122482_fasta <- read.fasta("PCitricarpa_CBS122482.fasta")
+PCitricarpa_CBS122482_lengths <- getLength(PCitricarpa_CBS122482_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CBS122482_length_sum <- sum(PCitricarpa_CBS122482_lengths)
+PCitricarpa_CBS122482_perc <- PCitricarpa_CBS122482_lengths/PCitricarpa_CBS122482_length_sum
+PCitricarpa_CBS122482_length_cumsum <- cumsum(PCitricarpa_CBS122482_lengths)
+PCitricarpa_CBS122482_perc_cumsum <- cumsum(PCitricarpa_CBS122482_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CBS122482_df <- data.frame(PCitricarpa_CBS122482_lengths, PCitricarpa_CBS122482_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CBS122482}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CBS122482_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CBS122482_lengths), type="continuous"))
+
+PCitricarpa_CBS122482_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CBS 122482 \n")
+
+PCitricarpa_CBS122482_length_plot <- 
+  ggplot(PCitricarpa_CBS122482_df,    
+         aes(x=1:length(PCitricarpa_CBS122482_length_cumsum), 
+             y=PCitricarpa_CBS122482_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CBS122482_lengths, color = PCitricarpa_CBS122482_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CBS122482_df$PCitricarpa_CBS122482_lengths), labels = comma(fivenum(PCitricarpa_CBS122482_df$PCitricarpa_CBS122482_lengths))) +
+  geom_vline(xintercept=60, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CBS122482_colours), high = tail(PCitricarpa_CBS122482_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CBS122482_df$PCitricarpa_CBS122482_lengths), labels = comma(fivenum(PCitricarpa_CBS122482_df$PCitricarpa_CBS122482_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CBS122482_final_plot <- 
+  PCitricarpa_CBS122482_length_plot +
+  ggtitle(PCitricarpa_CBS122482_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CBS122482.png")
+  PCitricarpa_CBS122482_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CBS122482.pdf")
+  PCitricarpa_CBS122482_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CBS122482.svg")
+  PCitricarpa_CBS122482_final_plot
+dev.off()
+
+PCitricarpa_CBS122482_final_plot
+
+```
+
+## *Phyllosticta citricarpa* CBS 122670
+
+Reading data
+
+```{r data_PCitricarpa_CBS122670}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CBS122670_fasta <- read.fasta("PCitricarpa_CBS122670.fasta")
+PCitricarpa_CBS122670_lengths <- getLength(PCitricarpa_CBS122670_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CBS122670_length_sum <- sum(PCitricarpa_CBS122670_lengths)
+PCitricarpa_CBS122670_perc <- PCitricarpa_CBS122670_lengths/PCitricarpa_CBS122670_length_sum
+PCitricarpa_CBS122670_length_cumsum <- cumsum(PCitricarpa_CBS122670_lengths)
+PCitricarpa_CBS122670_perc_cumsum <- cumsum(PCitricarpa_CBS122670_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CBS122670_df <- data.frame(PCitricarpa_CBS122670_lengths, PCitricarpa_CBS122670_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CBS122670}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CBS122670_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CBS122670_lengths), type="continuous"))
+
+PCitricarpa_CBS122670_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CBS 122670 \n")
+
+PCitricarpa_CBS122670_length_plot <- 
+  ggplot(PCitricarpa_CBS122670_df,    
+         aes(x=1:length(PCitricarpa_CBS122670_length_cumsum), 
+             y=PCitricarpa_CBS122670_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CBS122670_lengths, color = PCitricarpa_CBS122670_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CBS122670_df$PCitricarpa_CBS122670_lengths), labels = comma(fivenum(PCitricarpa_CBS122670_df$PCitricarpa_CBS122670_lengths))) +
+  geom_vline(xintercept=67, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CBS122670_colours), high = tail(PCitricarpa_CBS122670_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CBS122670_df$PCitricarpa_CBS122670_lengths), labels = comma(fivenum(PCitricarpa_CBS122670_df$PCitricarpa_CBS122670_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CBS122670_final_plot <- 
+  PCitricarpa_CBS122670_length_plot +
+  ggtitle(PCitricarpa_CBS122670_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CBS122670.png")
+  PCitricarpa_CBS122670_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CBS122670.pdf")
+  PCitricarpa_CBS122670_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CBS122670.svg")
+  PCitricarpa_CBS122670_final_plot
+dev.off()
+
+PCitricarpa_CBS122670_final_plot
+
+```
+
+### *Phyllosticta citricarpa* CBS 127454
+
+Reading data
+
+```{r data_PCitricarpa_CBS127454}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CBS127454_fasta <- read.fasta("PCitricarpa_CBS127454.fasta")
+PCitricarpa_CBS127454_lengths <- getLength(PCitricarpa_CBS127454_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CBS127454_length_sum <- sum(PCitricarpa_CBS127454_lengths)
+PCitricarpa_CBS127454_perc <- PCitricarpa_CBS127454_lengths/PCitricarpa_CBS127454_length_sum
+PCitricarpa_CBS127454_length_cumsum <- cumsum(PCitricarpa_CBS127454_lengths)
+PCitricarpa_CBS127454_perc_cumsum <- cumsum(PCitricarpa_CBS127454_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CBS127454_df <- data.frame(PCitricarpa_CBS127454_lengths, PCitricarpa_CBS127454_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CBS127454}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CBS127454_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CBS127454_lengths), type="continuous"))
+
+PCitricarpa_CBS127454_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CBS 127454 \n")
+
+PCitricarpa_CBS127454_length_plot <- 
+  ggplot(PCitricarpa_CBS127454_df,    
+         aes(x=1:length(PCitricarpa_CBS127454_length_cumsum), 
+             y=PCitricarpa_CBS127454_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CBS127454_lengths, color = PCitricarpa_CBS127454_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CBS127454_df$PCitricarpa_CBS127454_lengths), labels = comma(fivenum(PCitricarpa_CBS127454_df$PCitricarpa_CBS127454_lengths))) +
+  geom_vline(xintercept=79, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CBS127454_colours), high = tail(PCitricarpa_CBS127454_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CBS127454_df$PCitricarpa_CBS127454_lengths), labels = comma(fivenum(PCitricarpa_CBS127454_df$PCitricarpa_CBS127454_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CBS127454_final_plot <- 
+  PCitricarpa_CBS127454_length_plot +
+  ggtitle(PCitricarpa_CBS127454_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CBS127454.png")
+  PCitricarpa_CBS127454_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CBS127454.pdf")
+  PCitricarpa_CBS127454_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CBS127454.svg")
+  PCitricarpa_CBS127454_final_plot
+dev.off()
+
+PCitricarpa_CBS127454_final_plot
+
+```
+
+## *Phyllosticta citricarpa* CBS 131864
+
+Reading data
+
+```{r data_PCitricarpa_CBS131864}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CBS131864_fasta <- read.fasta("PCitricarpa_CBS131864.fasta")
+PCitricarpa_CBS131864_lengths <- getLength(PCitricarpa_CBS131864_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CBS131864_length_sum <- sum(PCitricarpa_CBS131864_lengths)
+PCitricarpa_CBS131864_perc <- PCitricarpa_CBS131864_lengths/PCitricarpa_CBS131864_length_sum
+PCitricarpa_CBS131864_length_cumsum <- cumsum(PCitricarpa_CBS131864_lengths)
+PCitricarpa_CBS131864_perc_cumsum <- cumsum(PCitricarpa_CBS131864_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CBS131864_df <- data.frame(PCitricarpa_CBS131864_lengths, PCitricarpa_CBS131864_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CBS131864}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CBS131864_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CBS131864_lengths), type="continuous"))
+
+PCitricarpa_CBS131864_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CBS 131864 \n")
+
+PCitricarpa_CBS131864_length_plot <- 
+  ggplot(PCitricarpa_CBS131864_df,    
+         aes(x=1:length(PCitricarpa_CBS131864_length_cumsum), 
+             y=PCitricarpa_CBS131864_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CBS131864_lengths, color = PCitricarpa_CBS131864_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CBS131864_df$PCitricarpa_CBS131864_lengths), labels = comma(fivenum(PCitricarpa_CBS131864_df$PCitricarpa_CBS131864_lengths))) +
+  geom_vline(xintercept=69, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CBS131864_colours), high = tail(PCitricarpa_CBS131864_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CBS131864_df$PCitricarpa_CBS131864_lengths), labels = comma(fivenum(PCitricarpa_CBS131864_df$PCitricarpa_CBS131864_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CBS131864_final_plot <- 
+  PCitricarpa_CBS131864_length_plot +
+  ggtitle(PCitricarpa_CBS131864_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CBS131864.png")
+  PCitricarpa_CBS131864_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CBS131864.pdf")
+  PCitricarpa_CBS131864_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CBS131864.svg")
+  PCitricarpa_CBS131864_final_plot
+dev.off()
+
+PCitricarpa_CBS131864_final_plot
+
+```
+
+## *Phyllosticta citricarpa* CBS 141352
+
+Reading data
+
+```{r data_PCitricarpa_CBS141352}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CBS141352_fasta <- read.fasta("PCitricarpa_CBS141352.fasta")
+PCitricarpa_CBS141352_lengths <- getLength(PCitricarpa_CBS141352_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CBS141352_length_sum <- sum(PCitricarpa_CBS141352_lengths)
+PCitricarpa_CBS141352_perc <- PCitricarpa_CBS141352_lengths/PCitricarpa_CBS141352_length_sum
+PCitricarpa_CBS141352_length_cumsum <- cumsum(PCitricarpa_CBS141352_lengths)
+PCitricarpa_CBS141352_perc_cumsum <- cumsum(PCitricarpa_CBS141352_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CBS141352_df <- data.frame(PCitricarpa_CBS141352_lengths, PCitricarpa_CBS141352_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CBS141352}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CBS141352_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CBS141352_lengths), type="continuous"))
+
+PCitricarpa_CBS141352_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CBS 141352 \n")
+
+PCitricarpa_CBS141352_length_plot <- 
+  ggplot(PCitricarpa_CBS141352_df,    
+         aes(x=1:length(PCitricarpa_CBS141352_length_cumsum), 
+             y=PCitricarpa_CBS141352_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CBS141352_lengths, color = PCitricarpa_CBS141352_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CBS141352_df$PCitricarpa_CBS141352_lengths), labels = comma(fivenum(PCitricarpa_CBS141352_df$PCitricarpa_CBS141352_lengths))) +
+  geom_vline(xintercept=70, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CBS141352_colours), high = tail(PCitricarpa_CBS141352_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CBS141352_df$PCitricarpa_CBS141352_lengths), labels = comma(fivenum(PCitricarpa_CBS141352_df$PCitricarpa_CBS141352_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CBS141352_final_plot <- 
+  PCitricarpa_CBS141352_length_plot +
+  ggtitle(PCitricarpa_CBS141352_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CBS141352.png")
+  PCitricarpa_CBS141352_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CBS141352.pdf")
+  PCitricarpa_CBS141352_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CBS141352.svg")
+  PCitricarpa_CBS141352_final_plot
+dev.off()
+
+PCitricarpa_CBS141352_final_plot
+
+```
+
+## *Phyllosticta citricarpa* CPC 16586
+
+Reading data
+
+```{r data_PCitricarpa_CPC16586}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CPC16586_fasta <- read.fasta("PCitricarpa_CPC16586.fasta")
+PCitricarpa_CPC16586_lengths <- getLength(PCitricarpa_CPC16586_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CPC16586_length_sum <- sum(PCitricarpa_CPC16586_lengths)
+PCitricarpa_CPC16586_perc <- PCitricarpa_CPC16586_lengths/PCitricarpa_CPC16586_length_sum
+PCitricarpa_CPC16586_length_cumsum <- cumsum(PCitricarpa_CPC16586_lengths)
+PCitricarpa_CPC16586_perc_cumsum <- cumsum(PCitricarpa_CPC16586_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CPC16586_df <- data.frame(PCitricarpa_CPC16586_lengths, PCitricarpa_CPC16586_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CPC16586}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CPC16586_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CPC16586_lengths), type="continuous"))
+
+PCitricarpa_CPC16586_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CPC 16586 \n")
+
+PCitricarpa_CPC16586_length_plot <- 
+  ggplot(PCitricarpa_CPC16586_df,    
+         aes(x=1:length(PCitricarpa_CPC16586_length_cumsum), 
+             y=PCitricarpa_CPC16586_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CPC16586_lengths, color = PCitricarpa_CPC16586_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CPC16586_df$PCitricarpa_CPC16586_lengths), labels = comma(fivenum(PCitricarpa_CPC16586_df$PCitricarpa_CPC16586_lengths))) +
+  geom_vline(xintercept=68, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CPC16586_colours), high = tail(PCitricarpa_CPC16586_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CPC16586_df$PCitricarpa_CPC16586_lengths), labels = comma(fivenum(PCitricarpa_CPC16586_df$PCitricarpa_CPC16586_lengths))) +
+  geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CPC16586_final_plot <- 
+  PCitricarpa_CPC16586_length_plot +
+  ggtitle(PCitricarpa_CPC16586_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CPC16586.png")
+  PCitricarpa_CPC16586_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CPC16586.pdf")
+  PCitricarpa_CPC16586_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CPC16586.svg")
+  PCitricarpa_CPC16586_final_plot
+dev.off()
+
+PCitricarpa_CPC16586_final_plot
+
+```
+
+## *Phyllosticta citricarpa* CPC 27913
+
+```{r data_PCitricarpa_CPC27913}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitricarpa_CPC27913_fasta <- read.fasta("PCitricarpa_CPC27913.fasta")
+PCitricarpa_CPC27913_lengths <- getLength(PCitricarpa_CPC27913_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitricarpa_CPC27913_length_sum <- sum(PCitricarpa_CPC27913_lengths)
+PCitricarpa_CPC27913_perc <- PCitricarpa_CPC27913_lengths/PCitricarpa_CPC27913_length_sum
+PCitricarpa_CPC27913_length_cumsum <- cumsum(PCitricarpa_CPC27913_lengths)
+PCitricarpa_CPC27913_perc_cumsum <- cumsum(PCitricarpa_CPC27913_perc)
+
+#Creating a data frame for ggplot
+PCitricarpa_CPC27913_df <- data.frame(PCitricarpa_CPC27913_lengths, PCitricarpa_CPC27913_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitricarpa_CPC27913}
+# Adjusting colour palette according to number of contigs
+PCitricarpa_CPC27913_colours <- c(wes_palette("Zissou1", length(PCitricarpa_CPC27913_lengths), type="continuous"))
+
+PCitricarpa_CPC27913_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citricarpa CPC 27913 \n")
+
+PCitricarpa_CPC27913_length_plot <- 
+  ggplot(PCitricarpa_CPC27913_df,    
+         aes(x=1:length(PCitricarpa_CPC27913_length_cumsum), 
+             y=PCitricarpa_CPC27913_length_cumsum)) +
+  geom_point(aes(size=PCitricarpa_CPC27913_lengths, color = PCitricarpa_CPC27913_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitricarpa_CPC27913_df$PCitricarpa_CPC27913_lengths), labels = comma(fivenum(PCitricarpa_CPC27913_df$PCitricarpa_CPC27913_lengths))) +
+  geom_vline(xintercept=51, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitricarpa_CPC27913_colours), high = tail(PCitricarpa_CPC27913_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitricarpa_CPC27913_df$PCitricarpa_CPC27913_lengths), labels = comma(fivenum(PCitricarpa_CPC27913_df$PCitricarpa_CPC27913_lengths))) +
+  geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitricarpa_CPC27913_final_plot <- 
+  PCitricarpa_CPC27913_length_plot +
+  ggtitle(PCitricarpa_CPC27913_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitricarpa/PCitricarpa_CPC27913.png")
+  PCitricarpa_CPC27913_final_plot
+dev.off()
+
+pdf("./PCitricarpa/PCitricarpa_CPC27913.pdf")
+  PCitricarpa_CPC27913_final_plot
+dev.off()
+
+svg("./PCitricarpa/PCitricarpa_CPC27913.svg")
+  PCitricarpa_CPC27913_final_plot
+dev.off()
+
+PCitricarpa_CPC27913_final_plot
+
+```
+
+# *Phyllosticta citrichinaensis*
+
+```{r folder_PCitrichinaensis}
+dir.create("PCitrichinaensis")
+```
+
+## *Phyllosticta citrichinaensis* CBS 129764
+
+Reading data
+
+```{r data_PCitrichinaensis_CBS129764}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitrichinaensis_CBS129764_fasta <- read.fasta("PCitrichinaensis_CBS129764.fasta")
+PCitrichinaensis_CBS129764_lengths <- getLength(PCitrichinaensis_CBS129764_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitrichinaensis_CBS129764_length_sum <- sum(PCitrichinaensis_CBS129764_lengths)
+PCitrichinaensis_CBS129764_perc <- PCitrichinaensis_CBS129764_lengths/PCitrichinaensis_CBS129764_length_sum
+PCitrichinaensis_CBS129764_length_cumsum <- cumsum(PCitrichinaensis_CBS129764_lengths)
+PCitrichinaensis_CBS129764_perc_cumsum <- cumsum(PCitrichinaensis_CBS129764_perc)
+
+#Creating a data frame for ggplot
+PCitrichinaensis_CBS129764_df <- data.frame(PCitrichinaensis_CBS129764_lengths, PCitrichinaensis_CBS129764_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitrichinaensis_CBS129764}
+# Adjusting colour palette according to number of contigs
+PCitrichinaensis_CBS129764_colours <- c(wes_palette("Zissou1", length(PCitrichinaensis_CBS129764_lengths), type="continuous"))
+
+PCitrichinaensis_CBS129764_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citrichinaensis CBS 129764 \n")
+
+PCitrichinaensis_CBS129764_length_plot <- 
+  ggplot(PCitrichinaensis_CBS129764_df,    
+         aes(x=1:length(PCitrichinaensis_CBS129764_length_cumsum), 
+             y=PCitrichinaensis_CBS129764_length_cumsum)) +
+  geom_point(aes(size=PCitrichinaensis_CBS129764_lengths, color = PCitrichinaensis_CBS129764_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitrichinaensis_CBS129764_df$PCitrichinaensis_CBS129764_lengths), labels = comma(fivenum(PCitrichinaensis_CBS129764_df$PCitrichinaensis_CBS129764_lengths))) +
+  geom_vline(xintercept=18, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitrichinaensis_CBS129764_colours), high = tail(PCitrichinaensis_CBS129764_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitrichinaensis_CBS129764_df$PCitrichinaensis_CBS129764_lengths), labels = comma(fivenum(PCitrichinaensis_CBS129764_df$PCitrichinaensis_CBS129764_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitrichinaensis_CBS129764_final_plot <- 
+  PCitrichinaensis_CBS129764_length_plot +
+  ggtitle(PCitrichinaensis_CBS129764_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitrichinaensis/PCitrichinaensis_CBS129764.png")
+  PCitrichinaensis_CBS129764_final_plot
+dev.off()
+
+pdf("./PCitrichinaensis/PCitrichinaensis_CBS129764.pdf")
+  PCitrichinaensis_CBS129764_final_plot
+dev.off()
+
+svg("./PCitrichinaensis/PCitrichinaensis_CBS129764.svg")
+  PCitrichinaensis_CBS129764_final_plot
+dev.off()
+
+PCitrichinaensis_CBS129764_final_plot
+
+```
+
+## *Phyllosticta citrichinaensis* CBS 130529
+
+Reading data
+
+```{r data_PCitrichinaensis_CBS130529}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PCitrichinaensis_CBS130529_fasta <- read.fasta("PCitrichinaensis_CBS130529.fasta")
+PCitrichinaensis_CBS130529_lengths <- getLength(PCitrichinaensis_CBS130529_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PCitrichinaensis_CBS130529_length_sum <- sum(PCitrichinaensis_CBS130529_lengths)
+PCitrichinaensis_CBS130529_perc <- PCitrichinaensis_CBS130529_lengths/PCitrichinaensis_CBS130529_length_sum
+PCitrichinaensis_CBS130529_length_cumsum <- cumsum(PCitrichinaensis_CBS130529_lengths)
+PCitrichinaensis_CBS130529_perc_cumsum <- cumsum(PCitrichinaensis_CBS130529_perc)
+
+#Creating a data frame for ggplot
+PCitrichinaensis_CBS130529_df <- data.frame(PCitrichinaensis_CBS130529_lengths, PCitrichinaensis_CBS130529_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PCitrichinaensis_CBS130529}
+# Adjusting colour palette according to number of contigs
+PCitrichinaensis_CBS130529_colours <- c(wes_palette("Zissou1", length(PCitrichinaensis_CBS130529_lengths), type="continuous"))
+
+PCitrichinaensis_CBS130529_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. citrichinaensis CBS 130529 \n")
+
+PCitrichinaensis_CBS130529_length_plot <- 
+  ggplot(PCitrichinaensis_CBS130529_df,    
+         aes(x=1:length(PCitrichinaensis_CBS130529_length_cumsum), 
+             y=PCitrichinaensis_CBS130529_length_cumsum)) +
+  geom_point(aes(size=PCitrichinaensis_CBS130529_lengths, color = PCitrichinaensis_CBS130529_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PCitrichinaensis_CBS130529_df$PCitrichinaensis_CBS130529_lengths), labels = comma(fivenum(PCitrichinaensis_CBS130529_df$PCitrichinaensis_CBS130529_lengths))) +
+  geom_vline(xintercept=19, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PCitrichinaensis_CBS130529_colours), high = tail(PCitrichinaensis_CBS130529_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PCitrichinaensis_CBS130529_df$PCitrichinaensis_CBS130529_lengths), labels = comma(fivenum(PCitrichinaensis_CBS130529_df$PCitrichinaensis_CBS130529_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PCitrichinaensis_CBS130529_final_plot <- 
+  PCitrichinaensis_CBS130529_length_plot +
+  ggtitle(PCitrichinaensis_CBS130529_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PCitrichinaensis/PCitrichinaensis_CBS130529.png")
+  PCitrichinaensis_CBS130529_final_plot
+dev.off()
+
+pdf("./PCitrichinaensis/PCitrichinaensis_CBS130529.pdf")
+  PCitrichinaensis_CBS130529_final_plot
+dev.off()
+
+svg("./PCitrichinaensis/PCitrichinaensis_CBS130529.svg")
+  PCitrichinaensis_CBS130529_final_plot
+dev.off()
+
+PCitrichinaensis_CBS130529_final_plot
+
+```
+
+# *Phyllosticta paracitricarpa*
+
+```{r folder_PParacitricarpa}
+dir.create("PParacitricarpa")
+```
+
+## *Phyllosticta paracitricarpa* CPC 27169
+
+Reading data
+
+```{r data_PParacitricarpa_CPC27169}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PParacitricarpa_CPC27169_fasta <- read.fasta("PParacitricarpa_CPC27169.fasta")
+PParacitricarpa_CPC27169_lengths <- getLength(PParacitricarpa_CPC27169_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PParacitricarpa_CPC27169_length_sum <- sum(PParacitricarpa_CPC27169_lengths)
+PParacitricarpa_CPC27169_perc <- PParacitricarpa_CPC27169_lengths/PParacitricarpa_CPC27169_length_sum
+PParacitricarpa_CPC27169_length_cumsum <- cumsum(PParacitricarpa_CPC27169_lengths)
+PParacitricarpa_CPC27169_perc_cumsum <- cumsum(PParacitricarpa_CPC27169_perc)
+
+#Creating a data frame for ggplot
+PParacitricarpa_CPC27169_df <- data.frame(PParacitricarpa_CPC27169_lengths, PParacitricarpa_CPC27169_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PParacitricarpa_CPC27169}
+# Adjusting colour palette according to number of contigs
+PParacitricarpa_CPC27169_colours <- c(wes_palette("Zissou1", length(PParacitricarpa_CPC27169_lengths), type="continuous"))
+
+PParacitricarpa_CPC27169_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. paracitricarpa CPC 27169 \n")
+
+PParacitricarpa_CPC27169_length_plot <- 
+  ggplot(PParacitricarpa_CPC27169_df,    
+         aes(x=1:length(PParacitricarpa_CPC27169_length_cumsum), 
+             y=PParacitricarpa_CPC27169_length_cumsum)) +
+  geom_point(aes(size=PParacitricarpa_CPC27169_lengths, color = PParacitricarpa_CPC27169_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PParacitricarpa_CPC27169_df$PParacitricarpa_CPC27169_lengths), labels = comma(fivenum(PParacitricarpa_CPC27169_df$PParacitricarpa_CPC27169_lengths))) +
+  geom_vline(xintercept=74, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PParacitricarpa_CPC27169_colours), high = tail(PParacitricarpa_CPC27169_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PParacitricarpa_CPC27169_df$PParacitricarpa_CPC27169_lengths), labels = comma(fivenum(PParacitricarpa_CPC27169_df$PParacitricarpa_CPC27169_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PParacitricarpa_CPC27169_final_plot <- 
+  PParacitricarpa_CPC27169_length_plot +
+  ggtitle(PParacitricarpa_CPC27169_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PParacitricarpa/PParacitricarpa_CPC27169.png")
+  PParacitricarpa_CPC27169_final_plot
+dev.off()
+
+pdf("./PParacitricarpa/PParacitricarpa_CPC27169.pdf")
+  PParacitricarpa_CPC27169_final_plot
+dev.off()
+
+svg("./PParacitricarpa/PParacitricarpa_CPC27169.svg")
+  PParacitricarpa_CPC27169_final_plot
+dev.off()
+
+PParacitricarpa_CPC27169_final_plot
+
+```
+
+## *Phyllosticta paracitricarpa* CBS 141358
+
+Reading data
+
+```{r data_PParacitricarpa_CBS141358}
+# Read scaffold/contig lengths with read.fasta from seqinr
+PParacitricarpa_CBS141358_fasta <- read.fasta("PParacitricarpa_CBS141358.fasta")
+PParacitricarpa_CBS141358_lengths <- getLength(PParacitricarpa_CBS141358_fasta)
+
+#Length sum, percentage of total length, cumulative sum
+PParacitricarpa_CBS141358_length_sum <- sum(PParacitricarpa_CBS141358_lengths)
+PParacitricarpa_CBS141358_perc <- PParacitricarpa_CBS141358_lengths/PParacitricarpa_CBS141358_length_sum
+PParacitricarpa_CBS141358_length_cumsum <- cumsum(PParacitricarpa_CBS141358_lengths)
+PParacitricarpa_CBS141358_perc_cumsum <- cumsum(PParacitricarpa_CBS141358_perc)
+
+#Creating a data frame for ggplot
+PParacitricarpa_CBS141358_df <- data.frame(PParacitricarpa_CBS141358_lengths, PParacitricarpa_CBS141358_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_PParacitricarpa_CBS141358}
+# Adjusting colour palette according to number of contigs
+PParacitricarpa_CBS141358_colours <- c(wes_palette("Zissou1", length(PParacitricarpa_CBS141358_lengths), type="continuous"))
+
+PParacitricarpa_CBS141358_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "P. paracitricarpa CBS 141358 \n")
+
+PParacitricarpa_CBS141358_length_plot <- 
+  ggplot(PParacitricarpa_CBS141358_df,    
+         aes(x=1:length(PParacitricarpa_CBS141358_length_cumsum), 
+             y=PParacitricarpa_CBS141358_length_cumsum)) +
+  geom_point(aes(size=PParacitricarpa_CBS141358_lengths, color = PParacitricarpa_CBS141358_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(PParacitricarpa_CBS141358_df$PParacitricarpa_CBS141358_lengths), labels = comma(fivenum(PParacitricarpa_CBS141358_df$PParacitricarpa_CBS141358_lengths))) +
+  geom_vline(xintercept=65, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(PParacitricarpa_CBS141358_colours), high = tail(PParacitricarpa_CBS141358_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(PParacitricarpa_CBS141358_df$PParacitricarpa_CBS141358_lengths), labels = comma(fivenum(PParacitricarpa_CBS141358_df$PParacitricarpa_CBS141358_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+PParacitricarpa_CBS141358_final_plot <- 
+  PParacitricarpa_CBS141358_length_plot +
+  ggtitle(PParacitricarpa_CBS141358_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./PParacitricarpa/PParacitricarpa_CBS141358.png")
+  PParacitricarpa_CBS141358_final_plot
+dev.off()
+
+pdf("./PParacitricarpa/PParacitricarpa_CBS141358.pdf")
+  PParacitricarpa_CBS141358_final_plot
+dev.off()
+
+svg("./PParacitricarpa/PParacitricarpa_CBS141358.svg")
+  PParacitricarpa_CBS141358_final_plot
+dev.off()
+
+PParacitricarpa_CBS141358_final_plot
+
+```
+
+# *Pseudofusicoccum stromaticum*
+
+```{r folder_Pseudofusicoccum}
+dir.create("Pseudofusicoccum")
+```
+
+## *Pseudofusicoccum stromaticum* LGMF1611
+
+Reading data
+
+```{r data_Pseudofusicoccum_stromaticum_LGMF1611}
+# Read scaffold/contig lengths with read.fasta from seqinr
+Pseudofusicoccum_sp_LGMF1611_fasta <- read.fasta("Pseudofusicoccum_sp_LGMF1611.fasta")
+Pseudofusicoccum_sp_LGMF1611_lengths <- sort(getLength(Pseudofusicoccum_sp_LGMF1611_fasta), decreasing=TRUE)
+
+#Length sum, percentage of total length, cumulative sum
+Pseudofusicoccum_sp_LGMF1611_length_sum <- sum(Pseudofusicoccum_sp_LGMF1611_lengths)
+Pseudofusicoccum_sp_LGMF1611_perc <- Pseudofusicoccum_sp_LGMF1611_lengths/Pseudofusicoccum_sp_LGMF1611_length_sum
+Pseudofusicoccum_sp_LGMF1611_length_cumsum <- cumsum(Pseudofusicoccum_sp_LGMF1611_lengths)
+Pseudofusicoccum_sp_LGMF1611_perc_cumsum <- cumsum(Pseudofusicoccum_sp_LGMF1611_perc)
+
+#Creating a data frame for ggplot
+Pseudofusicoccum_sp_LGMF1611_df <- data.frame(Pseudofusicoccum_sp_LGMF1611_lengths, Pseudofusicoccum_sp_LGMF1611_perc)
+
+```
+
+Plotting cumulative sum of lengths and saving image
+
+```{r plot_Pseudofusicoccum_stromaticum_LGMF1611}
+# Adjusting colour palette according to number of contigs
+# Sometimes you can divide lenght(Pseudofusicoccum_sp_LGMF1611_lenghts) for some number to better adjust the colors/sizes of dots and contigs (and avoid cluttering for too fragmented genomes)
+Pseudofusicoccum_sp_LGMF1611_colours <- c(wes_palette("Zissou1", length(Pseudofusicoccum_sp_LGMF1611_lengths), type="continuous"))
+
+Pseudofusicoccum_sp_LGMF1611_length_title <- (paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "Pseudofusicoccum ", "sp. LGMF 1611", "\n"))
+
+# Attention to xintercept in geom_vline: here, I specified that I wanted to keep the 85 largest contigs, so the plot draws the vertical line there. You can change this to draw the line at the point representing the contigs you want to keep or remove.
+# Another approach is to create a expression that will then show you what contigs should be kept. This is present in the for loop script
+
+Pseudofusicoccum_sp_LGMF1611_length_plot <- 
+  ggplot(Pseudofusicoccum_sp_LGMF1611_df,    
+         aes(x=1:length(Pseudofusicoccum_sp_LGMF1611_length_cumsum), 
+             y=Pseudofusicoccum_sp_LGMF1611_length_cumsum)) +
+  geom_point(aes(size=Pseudofusicoccum_sp_LGMF1611_lengths, color = Pseudofusicoccum_sp_LGMF1611_lengths)) + 
+  scale_size_continuous(name = "Scaffold size (bp)\n", breaks = fivenum(Pseudofusicoccum_sp_LGMF1611_df$Pseudofusicoccum_sp_LGMF1611_lengths), labels = comma(fivenum(Pseudofusicoccum_sp_LGMF1611_df$Pseudofusicoccum_sp_LGMF1611_lengths))) +
+  geom_vline(xintercept=45, linetype="dashed", color = "red") +
+  scale_color_continuous(low = head(Pseudofusicoccum_sp_LGMF1611_colours), high = tail(Pseudofusicoccum_sp_LGMF1611_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(Pseudofusicoccum_sp_LGMF1611_df$Pseudofusicoccum_sp_LGMF1611_lengths), labels = comma(fivenum(Pseudofusicoccum_sp_LGMF1611_df$Pseudofusicoccum_sp_LGMF1611_lengths))) + geom_line(color="#046C9A")
+  
+## Final plot
+
+Pseudofusicoccum_sp_LGMF1611_final_plot <- 
+  Pseudofusicoccum_sp_LGMF1611_length_plot +
+  ggtitle(Pseudofusicoccum_sp_LGMF1611_length_title) + 
+  xlab("\nCumulative number of scaffolds") + 
+  ylab("Cumulative length of scaffolds (bp) \n") +  
+  theme(plot.title = element_text(hjust = 0.5)) + 
+   scale_y_continuous(label=comma)
+
+png("./Pseudofusicoccum/Pseudofusicoccum_sp_LGMF1611.png")
+  Pseudofusicoccum_sp_LGMF1611_final_plot
+dev.off()
+
+pdf("./Pseudofusicoccum/Pseudofusicoccum_sp_LGMF1611.pdf")
+  Pseudofusicoccum_sp_LGMF1611_final_plot
+dev.off()
+
+svg("./Pseudofusicoccum/Pseudofusicoccum_sp_LGMF1611.svg")
+  Pseudofusicoccum_sp_LGMF1611_final_plot
+dev.off()
+
+Pseudofusicoccum_sp_LGMF1611_final_plot
+
+```
