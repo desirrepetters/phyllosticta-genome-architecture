@@ -1,0 +1,146 @@
+---
+title: "contig_lengths_with_for_loop"
+author: "Desirrê Petters-Vandresen"
+date: "01/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Contig lengths thresholds (for Circos plots)
+
+### Background
+
+When producing the Circos plots for some of the *Phyllosticta* genome assemblies, some of the plots were too cluttered, as the assemblies were more fragmented and some of the contigs/scaffolds were too small to be properly depicted in the figure. 
+The idea for the updated Circos plots (the ones included in the final version of the manuscript) is to create some sort of threshold for the contigs that will be included in the plot, excluding contigs that are too small. However, as they will be excluded from the plot, there was the need to somehow show that they do not represent to much information from the genome.
+
+Hence, the need to produce some distribution plots to evaluate and assess how many contigs/scaffolds can be removed without removing important genomic information from plot.
+
+This is the script version with a for loop, that can be customized for a given set of genomes/species. In the for loop sometimes it will be hard to use the same threshold for all the strains, as it uses 98% of total cumulative length as a threshold and for some assemblies it's not the best value. 
+
+Given this, there is also a custom script to have more control in this aspect, producing plots strain per strain, individually. You can check it if needed in the file: ["contig_lengths.Rmd"](https://github.com/desirrepetters/phyllosticta-genome-architecture/blob/main/contig_lengths.R/contig_lengths.Rmd)).
+
+### Packages
+
+```{r packages}
+
+library(seqinr)
+library(tidyverse)
+library(scales)
+library(wesanderson)
+
+```
+
+### Getting the assemblies
+
+To run this code, I first created symbolic links for the genome files in the workdir (the files were stored in another computer folder):
+
+Now preparing a list of all isolates to be included. In this script I separate them per species, to make it easier to edit the captions and titles in the plot, so here I manually specified with isolates to include. In this example, I'm producing plots for isolates of *Phyllosticta capitalensis*:
+
+```{r}
+
+isolates <- c("PCapitalensis_CBS173_77", "PCapitalensis_CBS356_52", "PCapitalensis_CBS111638", "PCapitalensis_CBS117118", "PCapitalensis_CBS123374", "PCapitalensis_CBS128856", "PCapitalensis_LGMF01")
+genome_dir <- "../../Documentos/Genomes/Phyllosticta/"
+isolate_pattern <- "PCapitalensis"
+
+```
+
+Creating a list for the plots:
+
+```{r}
+
+final_plot_list = list()
+
+```
+
+Creating symbolic links for each of the files:
+```{r}
+
+for (isolate in isolates) {
+  
+  file_name = list.files(path = genome_dir, 
+             pattern = paste0(isolate, ".fasta*"))
+  file_name_and_path = paste0(genome_dir, file_name)
+  
+  file.symlink(from = file_name_and_path, to = ".")
+  
+}
+
+```
+
+
+### Avoiding the use of scientific notation in the plot
+
+Without avoind the use of scientific notation, genome size was a little confusing on the y axis of the plot.
+
+```{r}
+options(scipen=5)
+```
+
+
+```{r}
+# Read scaffold/contig lengths with read.fasta from seqinr
+for (isolate in isolates) {
+  isolate_number <- str_remove(isolate, "PCapitalensis_")
+  isolate_fasta <- read.fasta(paste0(isolate,".fasta"))
+  isolate_lengths <- sort(getLength(isolate_fasta), decreasing=TRUE)
+
+#Length sum, percentage of total length, cumulative sum
+  isolate_length_sum <- sum(isolate_lengths)
+  isolate_perc <- isolate_lengths/isolate_length_sum
+  isolate_length_cumsum <- cumsum(isolate_lengths)
+  isolate_perc_cumsum <- cumsum(isolate_perc)
+
+#Creating a data frame for ggplot
+  isolate_df <- data.frame(isolate_lengths, isolate_perc)
+
+  isolate_colours <- c(wes_palette("Zissou1", length(isolate_lengths), type="continuous"))
+
+  isolate_length_title <- paste("Cumulative length of scaffolds vs. cumulative number of scaffolds for \n", "Phyllosticta capitalensis", isolate_number, "\n")
+
+  isolate_length_plot <- 
+  ggplot(isolate_df,    
+         aes(x=1:length(isolate_length_cumsum), 
+             y=isolate_length_cumsum)) +
+         geom_point(aes(size=isolate_lengths, color = isolate_lengths)) + 
+         scale_size_continuous(name = "Scaffold size (bp)\n", breaks =     fivenum(isolate_df$isolate_lengths), labels = comma(fivenum(isolate_df$isolate_lengths))) +
+        geom_vline(xintercept=(which(abs(isolate_length_cumsum-(isolate_length_sum*0.98))==min(abs(isolate_length_cumsum-(isolate_length_sum*0.98))))), linetype="dashed", color = "red") +
+        scale_color_continuous(low = head(isolate_colours), high = tail(isolate_colours), name = "Scaffold size (bp)\n", guide = "legend", breaks = fivenum(isolate_df$isolate_lengths), labels = comma(fivenum(isolate_df$isolate_lengths))) +
+        geom_line(color="#046C9A")
+    
+  
+  isolate_final_plot <- 
+    isolate_length_plot +
+    ggtitle(isolate_length_title) + 
+    xlab("\nCumulative number of scaffolds") + 
+    ylab("Cumulative length of scaffolds (bp) \n") +  
+    theme(plot.title = element_text(hjust = 0.5)) + 
+    scale_y_continuous(label=comma)
+  
+## Final plot  
+  
+  final_plot_list[[isolate]] <- isolate_final_plot
+  
+  print(final_plot_list[[isolate]])
+
+  image_name_png <- paste0(isolate, ".png")
+  image_name_pdf <- paste0(isolate, ".pdf")
+  image_name_svg <- paste0(isolate, ".svg")
+
+  png(image_name_png)
+  print(final_plot_list[[isolate]])
+  dev.off()
+
+  pdf(image_name_pdf)
+  print(final_plot_list[[isolate]])
+  dev.off()
+
+  svg(image_name_svg)
+  print(final_plot_list[[isolate]])
+  dev.off()
+
+
+}
+```
